@@ -8,6 +8,7 @@ This agreement outlines how our team2 will communicate, collaborate, and manage 
 - Team members should check Slack regularly and keep the team informed of important updates.
 - Decisions that affect the whole team should be shared in the team Slack channel.
 - If a team member cannot attend a scheduled meeting, they should let the team know.
+- Every newly opened Pull Request should be posted in the team Slack channel so teammates know it is ready for review.
 
 ## Jira and Task Ownership
 
@@ -15,6 +16,17 @@ This agreement outlines how our team2 will communicate, collaborate, and manage 
 - Each team member is responsible for keeping their assigned Jira tickets updated.
 - Questions about requirements or task scope should be raised with the team.
 - Work will be divided fairly while considering availability, experience, and learning opportunities.
+- Each Pull Request should reference its corresponding Jira ticket.
+
+## Definition of Done
+
+Before a Pull Request is ready for review:
+
+- The work required by the Jira ticket should be complete.
+- Changes should be tested locally.
+- Commits should be clean and have clear, descriptive messages.
+- The Pull Request should reference the corresponding Jira ticket.
+- The PR link should be posted in Slack for visibility.
 
 ## Blockers
 
@@ -30,6 +42,7 @@ This agreement outlines how our team2 will communicate, collaborate, and manage 
 - Changes should not be made directly on `main`.
 - Commits should have clear, meaningful messages.
 - Changes must be submitted through a Pull Request (PR) before being merged into `main`.
+- Changes should be tested locally before a Pull Request is submitted for review.
 
 ## Pull Request Reviews
 
@@ -52,6 +65,18 @@ A Pull Request is ready to merge when:
 
 After a PR is merged, team members should pull the latest version of `main` before creating their next feature branch.
 
+## Meetings and Sprints
+
+- The team will meet for a weekly standup on Saturdays between 1:00 PM and 4:00 PM EST.
+- The team will work in one-week sprints.
+- At the end of each sprint, the goal is for the `main` branch to remain stable and ready for deployment.
+
+## AI Usage
+
+- AI tools may be used as informational resources, learning aids, or guides.
+- Students are responsible for writing and understanding the code they submit.
+- AI should support learning rather than replace the student's own implementation work.
+
 ## Team Support and Learning
 
 - We will communicate respectfully and support one another.
@@ -59,6 +84,7 @@ After a PR is merged, team members should pull the latest version of `main` befo
 - Team members should help each other without taking over another person's assigned work.
 - Coding, documentation, testing, reviewing, and presenting responsibilities should be shared or rotated when practical.
 - Useful knowledge and solutions should be shared with the team.
+- Our goal is to learn, collaborate, support one another, and have fun throughout the practicum.
 
 ## Accountability
 
