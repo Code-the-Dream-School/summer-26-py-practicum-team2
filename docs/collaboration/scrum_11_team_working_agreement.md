@@ -1,4 +1,4 @@
-# SCRUM-11: Team Working Agreement
+# AIR-11: Team Working Agreement
 
 This agreement outlines how our team2 will communicate, collaborate, and manage our work throughout the City Air Tracker project.
 
@@ -46,7 +46,7 @@ Before a Pull Request is ready for review:
 
 ## Pull Request Reviews
 
-- PR titles should include the Jira ticket number, for example: `SCRUM-11 Add team working agreement`.
+- PR titles should include the Jira ticket number, for example: `AIR-11 Add team working agreement`.
 - PRs should include a clear description of the changes.
 - At least **two teammates must review and approve** a PR before it is merged.
 - Review requests should be acknowledged as soon as reasonably possible, ideally within one business day.
