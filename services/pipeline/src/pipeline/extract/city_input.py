@@ -15,7 +15,7 @@ def normalize_city_row(row: dict[str, str]) -> dict[str, str]:
 
 
 def has_required_values(row: dict[str, str]) -> bool:
-    return all(row.get(field, "").strip() for field in REQUIRED_FIELDS)
+    return all((row.get(field) or "").strip() for field in REQUIRED_FIELDS)
 
 
 def is_valid_active_value(value: str) -> bool:
