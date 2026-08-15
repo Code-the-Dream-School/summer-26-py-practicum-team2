@@ -45,6 +45,17 @@ This repeats independently for each city in the input list. The `current` and `f
 - Cities that fail geocoding do not proceed to the historical air pollution call.
 - A summary count (cities processed vs. total cities requested) is reported at the end of a run.
 
+## Optional second API integration
+
+If the team keeps a human-friendly city input instead of supplying coordinates directly, the optional supporting integration is the OpenWeather Direct Geocoding API:
+
+- Endpoint: `GET /geo/1.0/direct`
+- Input: `city`, optional `state`, `country_code`
+- Query pattern: `q=city,state,country_code&limit=1`
+- Returned fields used by the pipeline: `name`, `lat`, `lon`, `country`, `state`
+
+This integration is intentionally limited to resolving one best-match coordinate pair for the configured city. It supports the primary historical air-pollution extract path without adding separate persistence or caching requirements to the extract client itself.
+
 ## Trimmed response sample
 
 Example of a single flattened record after parsing (real output from Chicago, mode `"history"`):
