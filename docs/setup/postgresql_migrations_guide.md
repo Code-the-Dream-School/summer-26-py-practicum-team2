@@ -5,11 +5,13 @@ Apply the database schema without creating tables by hand. Alembic creates table
 ## Setup (once)
 
 1. Have an empty Postgres database (local install, Docker, or Azure).
-2. Copy `.env.example` to `.env` and set `DATABASE_URL`:
+2. At the **repository root** (the same folder as `.env.example`), copy `.env.example` to `.env` and set `DATABASE_URL`:
 
 ```
 DATABASE_URL=postgresql+psycopg://USER:PASSWORD@HOST:5432/DATABASE
 ```
+
+Do not put `.env` in `services/pipeline`. Alembic still runs from that folder, and `load_dotenv()` walks up from the pipeline code to the repository-root `.env`.
 
 ## Create or update the schema
 
