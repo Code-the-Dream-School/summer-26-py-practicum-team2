@@ -32,6 +32,8 @@ Every column is required except resolved_state, since plenty of countries don't 
 
 I want to flag this before we build on top of it. A straight UNIQUE(query_text) with overwrite on refresh means we lose history. If OpenWeather ever returns a different lat/lon for the same query, whether their geocoder updates or a city gets renamed, we won't be able to tell after the fact. Any row in cities still holding the old coordinates will have no record of why. If an audit trail matters, I'd switch to UNIQUE(query_text, fetched_at) and treat the latest row per query as the effective cache through a view. That costs a bit of query complexity but buys real history. I'd like us to decide on this before we ship it.
 
+Decision: keeping the overwrite behavior as designed, fewer queries, less storage, and coordinates are locked into cities after the first run, so cache history isn't needed for this ticket.
+
 ---
 
 ## 2. cities
@@ -40,7 +42,7 @@ This is the canonical, pipeline-tracked city list, what the ETL is actually conf
 
 ```sql
 CREATE TABLE cities (
-    city_id           BIGSERIAL PRIMARY KEY,
+    city_id           TEXT PRIMARY KEY,      -- from the city input contract, canonical key across the pipeline
     display_name      TEXT NOT NULL,         -- e.g. "Austin, TX, US", what config and UI show
     geocode_cache_id  BIGINT REFERENCES geocoding_cache(cache_id) ON DELETE SET NULL,
     lat               NUMERIC(9,6) NOT NULL,  -- denormalized copy, locked at geocode time
@@ -56,7 +58,7 @@ CREATE UNIQUE INDEX uq_cities_coords ON cities (
 );
 ```
 
-city_id is again a surrogate primary key. geocode_cache_id references geocoding_cache with ON DELETE SET NULL, so if a cache row gets purged, the city doesn't disappear or get blocked from deletion, it just loses its lineage pointer.
+city_id is the natural key from the input contract rather than a surrogate, since it's meant to be the canonical identifier tracking records across pipeline steps and tables. geocode_cache_id references geocoding_cache with ON DELETE SET NULL, so if a cache row gets purged, the city doesn't disappear or get blocked from deletion, it just loses its lineage pointer.
 
 Uniqueness has two parts. UNIQUE(display_name) covers the config-facing name, and a rounded-coordinate uniqueness index sits on top of that, about eleven meters of precision at four decimal places, to catch two differently named config entries that actually resolve to the same physical point. Required fields are display_name, lat, and lon.
 
@@ -87,6 +89,8 @@ run_id is a surrogate primary key. Nothing references into this table from outsi
 
 One thing isn't decided yet, and I want the team's input on it. Right now nothing stops two extract runs from overlapping and racing each other against the same cities. If we never want concurrent runs of the same type, a partial unique index on run_type where status equals running would enforce that at the database level instead of relying on application logic to prevent it.
 
+Decision: not implementing this. Concurrency guarding is out of scope for this ticket.
+
 ---
 
 ## 4. raw_air_pollution_responses
@@ -96,7 +100,7 @@ Append-only log of every API call attempt against the history endpoint, includin
 ```sql
 CREATE TABLE raw_air_pollution_responses (
     raw_id         BIGSERIAL PRIMARY KEY,
-    city_id        BIGINT NOT NULL REFERENCES cities(city_id) ON DELETE RESTRICT,
+    city_id        TEXT NOT NULL REFERENCES cities(city_id) ON DELETE RESTRICT,
     run_id         BIGINT NOT NULL REFERENCES pipeline_runs(run_id) ON DELETE RESTRICT,
     window_start   TIMESTAMPTZ NOT NULL,   -- the `start` param, stored as a timestamp, not raw epoch
     window_end     TIMESTAMPTZ NOT NULL,
@@ -126,7 +130,7 @@ One row per city per hour, the deduplicated, transformed dataset the dashboard r
 ```sql
 CREATE TABLE gold_air_quality (
     gold_id        BIGSERIAL PRIMARY KEY,
-    city_id        BIGINT NOT NULL REFERENCES cities(city_id) ON DELETE RESTRICT,
+    city_id        TEXT NOT NULL REFERENCES cities(city_id) ON DELETE RESTRICT,
     observed_at    TIMESTAMPTZ NOT NULL,   -- converted from the response's `dt` epoch field
     aqi            SMALLINT NOT NULL CHECK (aqi BETWEEN 1 AND 5),  -- OpenWeather's 1-5 scale, not US EPA 0-500
     co             NUMERIC,
@@ -200,6 +204,8 @@ A third materialized view for weekly numbers was deliberately left out. gold_air
 
 There's one thing not decided yet, and it's better decided explicitly than left to default. The natural point to refresh both materialized views is right after a pipeline_runs row transitions to run_type equals transform, status equals success. What isn't clear is what to do when status is partial. Refreshing shows the dashboard fresher but incomplete data. Not refreshing shows a fully stale but complete picture. Both are defensible, but I'd like the team to pick one and document it, because right now nothing in the schema encodes that decision and it'll otherwise get decided implicitly by whoever writes the refresh call.
 
+Decision: refresh on a full success, not on a partial run. Whoever builds the dashboard refresh job can revisit that if it turns out to be the wrong call in practice.
+
 City display info like name and lat/lon isn't in gold_air_quality or either view above, the API joins to cities for that. That's fine at query time given how small the city count is, not worth denormalizing into the views unless that join ever shows up as a real cost.
 
 ---
@@ -216,8 +222,8 @@ raw_air_pollution_responses (0..1) --< (many) gold_air_quality   [lineage, nulla
 
 ## Judgment calls worth revisiting if the assumptions behind them stop holding
 
-1. The geocode cache overwrites on refresh, so there's no history, unless we switch to UNIQUE(query_text, fetched_at).
+1. The geocode cache overwrites on refresh, so there's no history, unless we switch to UNIQUE(query_text, fetched_at). Decided: keep overwrite.
 2. Coordinate uniqueness on cities is enforced by rounding to four decimals. Fine for city-level dedup, would falsely collide for very close but distinct points, which isn't a concern at city granularity but would be at street level.
-3. The raw table is per API call, not per hourly reading, so there's no per-hour lineage without unnesting the JSONB.
+3. The raw table is per API call, not per hourly reading, so there's no per-hour lineage without unnesting the JSONB. Decided: per API call, no readings table for now.
 4. RESTRICT is used fairly aggressively on the foreign keys pointing at cities and runs from raw and gold. Deleting a city with history attached requires an explicit decision, an archive step or a deliberate cascade override, not an accidental cascade.
-5. latest_city_aqi and gold_air_quality_daily are materialized views planned to refresh after a successful transform run. I still need us to decide whether a partial run should also trigger a refresh, rather than leaving that to whoever ends up writing the refresh call.
+5. latest_city_aqi and gold_air_quality_daily are materialized views planned to refresh after a successful transform run. Decided: refresh only on full success, not on partial, with the exact trigger logic left to whoever builds the dashboard refresh job.
