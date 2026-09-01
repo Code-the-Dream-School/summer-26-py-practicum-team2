@@ -1,0 +1,5 @@
+city_id,city_name,state,country,is_active
+US_RAL_01,Raleigh,NC,US,TRUE
+US_DUR_02,Durham,NC,US,TRUE
+GB_LON_01,London,,GB,TRUE
+US_NYC_99,New York,NY,US,FALSE
