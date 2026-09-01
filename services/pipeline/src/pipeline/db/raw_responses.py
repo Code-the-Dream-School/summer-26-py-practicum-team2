@@ -4,10 +4,10 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import Engine
-from sqlalchemy.orm import Session
+#from sqlalchemy import Engine
+#from sqlalchemy.orm import Session
 
-from pipeline.db.session import get_engine
+#from pipeline.db.session import get_engine
 
 @dataclass(frozen=True)
 class RawResponseRecord:
@@ -50,4 +50,20 @@ def prepare_raw_response_record(record: RawResponseRecord) -> RawResponseRecord:
         error_message=record.error_message,
         fetched_at=datetime.now(timezone.utc),
     )
+
+
+def raw_response_values(record: RawResponseRecord) -> dict[str, Any]:
+    prepared = prepare_raw_response_record(record)
+
+    return {
+        "city_id": prepared.city_id,
+        "run_id": prepared.run_id,
+        "window_start": prepared.window_start,
+        "window_end": prepared.window_end,
+        "http_status": prepared.http_status,
+        "raw_response": prepared.raw_response,
+        "response_text": prepared.response_text,
+        "error_message": prepared.error_message,
+        "fetched_at": prepared.fetched_at,
+    }
 

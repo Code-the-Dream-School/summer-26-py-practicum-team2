@@ -11,6 +11,7 @@ if str(PROJECT_SRC) not in sys.path:
 from pipeline.db.raw_responses import (
     RawResponseRecord,
     prepare_raw_response_record,
+    raw_response_values,
     validate_raw_response_record,
 )  # noqa: E402
 
@@ -101,4 +102,45 @@ def test_prepare_raw_response_record_preserves_fetched_at() -> None:
     prepared = prepare_raw_response_record(record)
 
     assert prepared.fetched_at == fetched_at
+
+
+def test_raw_response_values_matches_storage_shape() -> None:
+    record = RawResponseRecord(
+        city_id="US_RAL_01",
+        run_id="run_001",
+        window_start=datetime(2026, 8, 1, tzinfo=timezone.utc),
+        window_end=datetime(2026, 8, 2, tzinfo=timezone.utc),
+        http_status=200,
+        raw_response={"list": [{"dt": 123}]},
+        response_text=None,
+        error_message=None,
+    )
+
+    values = raw_response_values(record)
+
+    assert values["city_id"] == "US_RAL_01"
+    assert values["run_id"] == "run_001"
+    assert values["http_status"] == 200
+    assert values["raw_response"] == {"list": [{"dt": 123}]}
+    assert values["fetched_at"] is not None
+
+
+def test_raw_response_values_preserves_error_response() -> None:
+    record = RawResponseRecord(
+        city_id="US_RAL_01",
+        run_id="run_002",
+        window_start=datetime(2026, 8, 1, tzinfo=timezone.utc),
+        window_end=datetime(2026, 8, 2, tzinfo=timezone.utc),
+        http_status=500,
+        raw_response=None,
+        response_text="Internal Server Error",
+        error_message="OpenWeather request failed",
+    )
+
+    values = raw_response_values(record)
+
+    assert values["http_status"] == 500
+    assert values["raw_response"] is None
+    assert values["response_text"] == "Internal Server Error"
+    assert values["error_message"] == "OpenWeather request failed"
 
