@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
+from sqlalchemy import Engine
+from sqlalchemy.orm import Session
+
+from pipeline.db.session import get_engine
 
 @dataclass(frozen=True)
 class RawResponseRecord:
@@ -27,3 +31,23 @@ def validate_raw_response_record(record: RawResponseRecord) -> None:
 
     if record.window_end <= record.window_start:
         raise ValueError("window_end must be later than window_start")
+
+
+def prepare_raw_response_record(record: RawResponseRecord) -> RawResponseRecord:
+    validate_raw_response_record(record)
+
+    if record.fetched_at is not None:
+        return record
+
+    return RawResponseRecord(
+        city_id=record.city_id,
+        run_id=record.run_id,
+        window_start=record.window_start,
+        window_end=record.window_end,
+        http_status=record.http_status,
+        raw_response=record.raw_response,
+        response_text=record.response_text,
+        error_message=record.error_message,
+        fetched_at=datetime.now(timezone.utc),
+    )
+
