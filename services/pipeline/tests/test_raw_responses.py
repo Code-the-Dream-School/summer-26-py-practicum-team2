@@ -19,7 +19,7 @@ from pipeline.db.raw_responses import (
 def test_validate_raw_response_record_accepts_valid_record() -> None:
     record = RawResponseRecord(
         city_id="US_RAL_01",
-        run_id="run_001",
+        run_id=1,
         window_start=datetime(2026, 8, 1, tzinfo=timezone.utc),
         window_end=datetime(2026, 8, 2, tzinfo=timezone.utc),
         http_status=200,
@@ -32,7 +32,7 @@ def test_validate_raw_response_record_accepts_valid_record() -> None:
 def test_validate_raw_response_record_rejects_empty_city_id() -> None:
     record = RawResponseRecord(
         city_id="   ",
-        run_id="run_001",
+        run_id=1,
         window_start=datetime(2026, 8, 1, tzinfo=timezone.utc),
         window_end=datetime(2026, 8, 2, tzinfo=timezone.utc),
         http_status=200,
@@ -45,7 +45,7 @@ def test_validate_raw_response_record_rejects_empty_city_id() -> None:
 def test_validate_raw_response_record_rejects_invalid_window() -> None:
     record = RawResponseRecord(
         city_id="US_RAL_01",
-        run_id="run_001",
+        run_id=1,
         window_start=datetime(2026, 8, 2, tzinfo=timezone.utc),
         window_end=datetime(2026, 8, 1, tzinfo=timezone.utc),
         http_status=200,
@@ -55,23 +55,23 @@ def test_validate_raw_response_record_rejects_invalid_window() -> None:
         validate_raw_response_record(record)
 
 
-def test_validate_raw_response_record_rejects_empty_run_id() -> None:
+def test_validate_raw_response_record_rejects_non_positive_run_id() -> None:
     record = RawResponseRecord(
         city_id="US_RAL_01",
-        run_id="   ",
+        run_id=0,
         window_start=datetime(2026, 8, 1, tzinfo=timezone.utc),
         window_end=datetime(2026, 8, 2, tzinfo=timezone.utc),
         http_status=200,
     )
 
-    with pytest.raises(ValueError, match="run_id is required"):
+    with pytest.raises(ValueError, match="run_id must be a positive integer"):
         validate_raw_response_record(record)
 
 
 def test_prepare_raw_response_record_returns_valid_record() -> None:
     record = RawResponseRecord(
         city_id="US_RAL_01",
-        run_id="run_001",
+        run_id=1,
         window_start=datetime(2026, 8, 1, tzinfo=timezone.utc),
         window_end=datetime(2026, 8, 2, tzinfo=timezone.utc),
         http_status=200,
@@ -92,7 +92,7 @@ def test_prepare_raw_response_record_preserves_fetched_at() -> None:
 
     record = RawResponseRecord(
         city_id="US_RAL_01",
-        run_id="run_001",
+        run_id=1,
         window_start=datetime(2026, 8, 1, tzinfo=timezone.utc),
         window_end=datetime(2026, 8, 2, tzinfo=timezone.utc),
         http_status=200,
@@ -107,7 +107,7 @@ def test_prepare_raw_response_record_preserves_fetched_at() -> None:
 def test_raw_response_values_matches_storage_shape() -> None:
     record = RawResponseRecord(
         city_id="US_RAL_01",
-        run_id="run_001",
+        run_id=1,
         window_start=datetime(2026, 8, 1, tzinfo=timezone.utc),
         window_end=datetime(2026, 8, 2, tzinfo=timezone.utc),
         http_status=200,
@@ -119,7 +119,7 @@ def test_raw_response_values_matches_storage_shape() -> None:
     values = raw_response_values(record)
 
     assert values["city_id"] == "US_RAL_01"
-    assert values["run_id"] == "run_001"
+    assert values["run_id"] == 1
     assert values["http_status"] == 200
     assert values["raw_response"] == {"list": [{"dt": 123}]}
     assert values["fetched_at"] is not None
@@ -128,7 +128,7 @@ def test_raw_response_values_matches_storage_shape() -> None:
 def test_raw_response_values_preserves_error_response() -> None:
     record = RawResponseRecord(
         city_id="US_RAL_01",
-        run_id="run_002",
+        run_id=2,
         window_start=datetime(2026, 8, 1, tzinfo=timezone.utc),
         window_end=datetime(2026, 8, 2, tzinfo=timezone.utc),
         http_status=500,

@@ -12,7 +12,7 @@ from typing import Any
 @dataclass(frozen=True)
 class RawResponseRecord:
     city_id: str
-    run_id: str
+    run_id: int
     window_start: datetime
     window_end: datetime
     http_status: int
@@ -26,8 +26,8 @@ def validate_raw_response_record(record: RawResponseRecord) -> None:
     if not record.city_id.strip():
         raise ValueError("city_id is required")
 
-    if not record.run_id.strip():
-        raise ValueError("run_id is required")
+    if record.run_id <= 0:
+        raise ValueError("run_id must be a positive integer")
 
     if record.window_end <= record.window_start:
         raise ValueError("window_end must be later than window_start")
