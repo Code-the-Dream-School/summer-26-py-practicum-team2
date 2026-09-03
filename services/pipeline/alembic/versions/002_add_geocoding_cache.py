@@ -1,7 +1,7 @@
 """Add geocoding cache table.
 
 Revision ID: 002_add_geocoding_cache
-Revises: 001_initial_schema
+Revises: a00e2d059c17
 Create Date: 2026-08-29
 """
 
@@ -9,7 +9,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "002_add_geocoding_cache"
-down_revision: str | None = "001_initial_schema"
+down_revision: str | None = "a00e2d059c17"
 
 
 def upgrade() -> None:
