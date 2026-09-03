@@ -7,7 +7,7 @@ from pipeline.db.cities import (
     upsert_cities,
 )
 from pipeline.db.gold import GoldUpsertResult, count_gold_rows, upsert_gold
-from pipeline.db.models import Base, City, GoldAirQuality
+from pipeline.db.models import Base, City, GeocodingCache, GoldAirQuality, PipelineRun, PipelineRunStatus
 from pipeline.db.seed import DEFAULT_CITIES_FILE, get_cities_file, seed_cities
 from pipeline.db.session import get_database_url, get_engine
 
@@ -16,8 +16,11 @@ __all__ = [
     "City",
     "CityImportResult",
     "DEFAULT_CITIES_FILE",
+    "GeocodingCache",
     "GoldAirQuality",
     "GoldUpsertResult",
+    "PipelineRun",
+    "PipelineRunStatus",
     "city_from_row",
     "city_to_row",
     "count_gold_rows",

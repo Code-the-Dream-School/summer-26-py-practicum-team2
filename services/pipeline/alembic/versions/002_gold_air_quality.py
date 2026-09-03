@@ -9,7 +9,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "002_gold_air_quality"
-down_revision: str | None = "001_initial_schema"
+down_revision: str | None = "002_add_geocoding_cache"
 
 
 def upgrade() -> None:
