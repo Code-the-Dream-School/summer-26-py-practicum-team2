@@ -24,6 +24,19 @@ alembic upgrade head
 - **Empty database:** creates the current tables (right now: `cities`) and `alembic_version`.
 - **Database that already has migrations:** applies only new revisions. Safe to run again.
 
+## Seed city records
+
+`alembic upgrade head` creates the `cities` table but leaves it empty. Load rows from `config/cities.csv` (or set `CITIES_FILE` / pass a path):
+
+From `services/pipeline`, with the virtualenv active:
+
+```bash
+python seed_cities.py
+python seed_cities.py config/cities.csv
+```
+
+Same validation as the Week 2 CSV loader. Invalid rows are skipped. Inactive cities are stored. Run it again after you edit the file; existing `city_id`s are updated. Downstream code can read the table with `load_cities_from_db()`.
+
 ## Later schema changes
 
 1. Change models in `services/pipeline/src/pipeline/db/models.py`.

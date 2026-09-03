@@ -45,8 +45,12 @@ def has_required_columns(fieldnames: list[str] | None) -> bool:
         return False
     return all(field in fieldnames for field in REQUIRED_FIELDS)
 
-# Load, validate, normalize, and return active cities from a CSV file.
-def load_cities(file_path: str | Path) -> list[dict[str, str]]:
+
+def load_city_rows(file_path: str | Path, *, active_only: bool = False) -> list[dict[str, str]]:
+    """Read a city CSV, skip invalid rows, and normalize the rest.
+       If active_only is True, also skip cities with is_active=FALSE.
+       If False, keep inactive cities so they can be stored in the database.
+    """
     result = []
     with open(file_path, mode='r', encoding='utf-8') as file:
         reader = csv.DictReader(file)
@@ -60,9 +64,14 @@ def load_cities(file_path: str | Path) -> list[dict[str, str]]:
 
             normalized = normalize_city_row(row)
 
-            if not is_active_city(normalized):
+            if active_only and not is_active_city(normalized):
                 continue
 
             result.append(normalized)
 
     return result
+
+
+def load_cities(file_path: str | Path) -> list[dict[str, str]]:
+    """Return active, validated city records for extract-stage processing."""
+    return load_city_rows(file_path, active_only=True)
