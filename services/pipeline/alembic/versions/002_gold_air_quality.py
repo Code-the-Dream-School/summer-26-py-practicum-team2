@@ -1,7 +1,7 @@
 """Add gold_air_quality table.
 
 Revision ID: 002_gold_air_quality
-Revises: 001_initial_schema
+Revises: 002_add_geocoding_cache
 Create Date: 2026-09-01
 """
 
