@@ -7,34 +7,6 @@ from datetime import datetime, timedelta
 app = Flask(__name__)
 CORS(app)
 
-SAMPLE_CITIES = [
-    {
-        "id": "chicago-us",
-        "cityName": "Chicago, US",
-        "aqi": 2,
-        "trend": [
-            {"time": "6h", "aqi": 2},
-            {"time": "9h", "aqi": 2},
-            {"time": "12h", "aqi": 3},
-            {"time": "15h", "aqi": 3},
-            {"time": "18h", "aqi": 2},
-            {"time": "21h", "aqi": 1},
-        ],
-    },
-    {
-        "id": "miami-us",
-        "cityName": "Miami, US",
-        "aqi": 1,
-        "trend": [
-            {"time": "6h", "aqi": 1},
-            {"time": "9h", "aqi": 1},
-            {"time": "12h", "aqi": 2},
-            {"time": "15h", "aqi": 1},
-            {"time": "18h", "aqi": 1},
-            {"time": "21h", "aqi": 1},
-        ],
-    },
-]
 
 def generate_daily_history(base_aqi: int, days: int = 14) -> list[dict]:
     """Generate synthetic daily AQI history for aggregation demos."""
@@ -42,10 +14,66 @@ def generate_daily_history(base_aqi: int, days: int = 14) -> list[dict]:
     history = []
     for i in range(days):
         date = (today - timedelta(days=days - i - 1)).strftime("%Y-%m-%d")
-        # small random variation around the city's typical AQI
         aqi = max(1, min(5, base_aqi + random.choice([-1, 0, 0, 0, 1])))
         history.append({"date": date, "aqi": aqi})
     return history
+
+
+SAMPLE_CITIES = [
+    {
+        "id": "chicago-us",
+        "cityName": "Chicago, US",
+        "aqi": 2,
+        "trend": [
+            {"time": "6h", "aqi": 1},
+            {"time": "9h", "aqi": 1},
+            {"time": "12h", "aqi": 2},
+            {"time": "15h", "aqi": 1},
+            {"time": "18h", "aqi": 1},
+            {"time": "21h", "aqi": 1},
+            {"time": "6h", "aqi": 2},
+        ],
+        "daily_history": generate_daily_history(1),
+    },
+    {
+        "id": "miami-us",
+        "cityName": "Miami, US",
+        "aqi": 1,
+        "trend": [
+            {"time": "9h", "aqi": 2},
+            {"time": "12h", "aqi": 3},
+            {"time": "15h", "aqi": 3},
+            {"time": "18h", "aqi": 2},
+            {"time": "21h", "aqi": 1},
+        ],
+        "daily_history": generate_daily_history(2),
+    },
+    {
+        "id": "los-angeles-us",
+        "cityName": "Los Angeles, US",
+        "aqi": 4,
+        "trend": [
+            {"time": "6h", "aqi": 3},
+            {"time": "9h", "aqi": 4},
+            {"time": "12h", "aqi": 4},
+            {"time": "15h", "aqi": 5},
+            {"time": "18h", "aqi": 4},
+            {"time": "21h", "aqi": 3},
+        ],
+        "daily_history": generate_daily_history(4),
+    },
+]
+
+# def generate_daily_history(base_aqi: int, days: int = 14) -> list[dict]:
+#     """Generate synthetic daily AQI history for aggregation demos."""
+#     today = datetime.now()
+#     history = []
+#     for i in range(days):
+#         date = (today - timedelta(days=days - i - 1)).strftime("%Y-%m-%d")
+#         # small random variation around the city's typical AQI
+#         aqi = max(1, min(5, base_aqi + random.choice([-1, 0, 0, 0, 1])))
+#         history.append({"date": date, "aqi": aqi})
+#     return history
 
 @app.route("/api/cities")
 def get_cities():
@@ -73,10 +101,9 @@ def get_city_aggregates(city_id):
         return jsonify({"error": "city not found"}), 404
 
     period = request.args.get("period", "daily")
-    daily_history = generate_daily_history(city["aqi"])
+    daily_history = city["daily_history"]
 
     if period == "weekly":
-        # group every 7 days into one bucket, average the AQI
         weekly = []
         for i in range(0, len(daily_history), 7):
             chunk = daily_history[i : i + 7]
