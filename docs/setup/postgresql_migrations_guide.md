@@ -21,7 +21,7 @@ From `services/pipeline`, with the virtualenv active:
 alembic upgrade head
 ```
 
-- **Empty database:** creates the current tables (right now: `cities`) and `alembic_version`.
+- **Empty database:** creates the current tables (`cities`, `gold_air_quality`) and `alembic_version`.
 - **Database that already has migrations:** applies only new revisions. Safe to run again.
 
 ## Seed city records
@@ -36,6 +36,10 @@ python seed_cities.py config/cities.csv
 ```
 
 Same validation as the Week 2 CSV loader. Invalid rows are skipped. Inactive cities are stored. Run it again after you edit the file; existing `city_id`s are updated. Downstream code can read the table with `load_cities_from_db()`.
+
+## Gold rows
+
+`gold_air_quality` is keyed by `(city_id, observed_at)`. Calling `upsert_gold()` again for the same city and hour overwrites AQI and pollutants; it does not add another row. Sample records are enough to test this before the real transform exists. See `docs/reference/gold_table_contract.md`.
 
 ## Later schema changes
 

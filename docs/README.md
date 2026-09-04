@@ -40,5 +40,6 @@ Use these docs when you want to understand system structure, data flow, or dashb
 Use these docs for field-level details, schemas, and API artifacts.
 
 - `reference/data_dictionary.md`
+- `reference/gold_table_contract.md`
 - `reference/openweather_environmental_api_fields_reference.md`
 - `reference/openweather-air-pollution.postman_collection.json`
