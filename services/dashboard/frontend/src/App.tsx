@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import Header from "./components/layout/Header";
 import Footer from "./components/layout/Footer";
-import CitySummary from "./components/city/CitySummary";
+// import CitySummary from "./components/city/CitySummary";
 import TrendChart from "./components/charts/TrendChart";
-import CitySelector from "./components/city/CitySelector";
+// import CitySelector from "./components/city/CitySelector";
 import CityOverviewGrid from "./components/city/CityOverviewGrid";
 import CityMultiSelect from "./components/city/CityMultiSelect";
 import ComparisonChart from "./components/charts/ComparisonChart";
@@ -87,14 +87,14 @@ function App() {
   if (!selectedCity || !selectedId) return null;
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-surface">
       <Header />
       <main className="flex-1 px-6 py-8 space-y-6">
         <CityOverviewGrid cities={overview} selectedId={selectedId} onSelect={setSelectedId} />
-        <div className="flex justify-left">
+        {/* <div className="flex justify-left">
           <CitySelector cities={cities} selectedId={selectedId} onSelect={setSelectedId} />
-        </div>
-        <CitySummary cityName={selectedCity.cityName} aqi={selectedCity.aqi} />
+        </div> 
+        <CitySummary cityName={selectedCity.cityName} aqi={selectedCity.aqi} /> */}
 
         <div className="space-y-4">
           <Tabs tabs={CHART_TABS} activeId={activeTab} onChange={setActiveTab} />

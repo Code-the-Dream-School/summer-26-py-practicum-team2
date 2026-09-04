@@ -1,4 +1,4 @@
-// src/components/CityOverviewGrid.tsx
+// src/components/city/CityOverviewGrid.tsx
 import AqiBadge from "./AqiBadge";
 import type { CityOverview } from "../../api/client";
 
@@ -21,13 +21,13 @@ export default function CityOverviewGrid({
           onClick={() => onSelect(city.id)}
           className={`border rounded-lg p-3 text-right transition-colors ${
             city.id === selectedId
-              ? "border-gray-900"
-              : "border-gray-200 hover:border-gray-400"
+              ? "border-content"
+              : "border-border-default hover:border-content-subtle"
           }`}
         >
-          <p className="text-sm text-gray-500">{city.cityName}</p>
+          <p className="text-sm text-content-subtle">{city.cityName}</p>
           <div className="mt-2 flex items-center justify-end gap-2">
-            <span className="text-2xl font-semibold text-gray-900">
+            <span className="text-2xl font-semibold text-content">
               {city.aqi}
             </span>
             <AqiBadge aqi={city.aqi} />

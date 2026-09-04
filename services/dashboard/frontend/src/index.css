@@ -1,1 +1,22 @@
 @import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f9fafb;
+  --color-content: #111827;
+  --color-content-subtle: #6b7280;
+  --color-border-default: #e5e7eb;
+  --font-playfair: "Playfair Display", serif;
+  --font-poppins: "Poppins", sans-serif;
+  --font-grotesk: "Space Grotesk", sans-serif;
+}
+
+.dark {
+  --color-surface: #111827;
+  --color-surface-subtle: #1f2937;
+  --color-content: #f9fafb;
+  --color-content-subtle: #9ca3af;
+  --color-border-default: #374151;
+}
