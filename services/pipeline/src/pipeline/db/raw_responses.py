@@ -4,10 +4,11 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
-#from sqlalchemy import Engine
-#from sqlalchemy.orm import Session
+from sqlalchemy import Engine
+from sqlalchemy.orm import Session
 
-#from pipeline.db.session import get_engine
+from pipeline.db.models import RawResponse
+from pipeline.db.session import get_engine
 
 @dataclass(frozen=True)
 class RawResponseRecord:
@@ -57,7 +58,8 @@ def raw_response_values(record: RawResponseRecord) -> dict[str, Any]:
 
     return {
         "city_id": prepared.city_id,
-        "run_id": prepared.run_id,
+        "pipeline_run_id": prepared.run_id,
+        "pipeline_run_id": prepared.run_id,
         "window_start": prepared.window_start,
         "window_end": prepared.window_end,
         "http_status": prepared.http_status,
@@ -67,3 +69,18 @@ def raw_response_values(record: RawResponseRecord) -> dict[str, Any]:
         "fetched_at": prepared.fetched_at,
     }
 
+
+def save_raw_response(
+    record: RawResponseRecord,
+    engine: Engine | None = None,
+                    ) -> RawResponse:
+    values = raw_response_values(record)
+    db_engine = engine or get_engine()
+
+    with Session(db_engine) as session:
+        raw_response = RawResponse(**values)
+        session.add(raw_response)
+        session.commit()
+        session.refresh(raw_response)
+
+        return raw_response
