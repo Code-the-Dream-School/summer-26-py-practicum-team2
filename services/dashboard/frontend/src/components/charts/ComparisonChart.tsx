@@ -22,13 +22,15 @@ function mergeByTime(cities: CityTrend[]) {
 
   for (const city of cities) {
     for (const point of city.trend) {
-      const existing = timeMap.get(point.time) ?? { time: point.time };
+      const existing = timeMap.get(point.observedAt) ?? { observedAt: point.observedAt };
       existing[city.cityName] = point.aqi;
-      timeMap.set(point.time, existing);
+      timeMap.set(point.observedAt, existing);
     }
   }
 
-  return Array.from(timeMap.values());
+  return Array.from(timeMap.values()).sort((left, right) =>
+    String(left.observedAt).localeCompare(String(right.observedAt))
+  );
 }
 
 export default function ComparisonChart({ cities }: ComparisonChartProps) {
@@ -48,7 +50,7 @@ export default function ComparisonChart({ cities }: ComparisonChartProps) {
       <ResponsiveContainer width="100%" height={280}>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-          <XAxis dataKey="time" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={{ stroke: "#e5e7eb" }} tickLine={false} />
+          <XAxis dataKey="observedAt" tickFormatter={(value) => new Date(value).toLocaleTimeString([], { hour: "numeric" })} tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={{ stroke: "#e5e7eb" }} tickLine={false} />
           <YAxis domain={[1, 5]} ticks={[1, 2, 3, 4, 5]} tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={{ stroke: "#e5e7eb" }} tickLine={false} />
           <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, borderColor: "#e5e7eb" }} />
           <Legend wrapperStyle={{ fontSize: 12 }} />

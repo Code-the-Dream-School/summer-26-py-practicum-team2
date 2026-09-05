@@ -10,7 +10,7 @@ import {
 } from "recharts";
 
 export type TrendPoint = {
-  time: string;
+  observedAt: string;
   aqi: number;
 };
 
@@ -27,7 +27,8 @@ export default function TrendChart({ cityName, data }: TrendChartProps) {
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
           <XAxis
-            dataKey="time"
+            dataKey="observedAt"
+            tickFormatter={(value) => new Date(value).toLocaleTimeString([], { hour: "numeric" })}
             tick={{ fontSize: 12, fill: "#9ca3af" }}
             axisLine={{ stroke: "#e5e7eb" }}
             tickLine={false}

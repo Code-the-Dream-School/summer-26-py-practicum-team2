@@ -63,8 +63,8 @@ jobs:
         working-directory: services/pipeline
         run: python -m alembic upgrade head
 
-      - name: Run pipeline tests
+      - name: Run pipeline and dashboard tests
         env:
           PYTHONPATH: services/pipeline
           DATABASE_URL: postgresql+psycopg://cityair:cityair@localhost:5432/cityair
-        run: python -m pytest services/pipeline/tests
+        run: python -m pytest services/pipeline/tests services/dashboard/tests
