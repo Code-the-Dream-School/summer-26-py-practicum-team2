@@ -28,6 +28,9 @@ jobs:
       - name: Compile Python sources
         run: python -m compileall services
 
+      - name: Run dashboard API tests
+        run: python -m pytest services/dashboard/tests -q
+
   pipeline-tests:
     name: Pipeline tests
     runs-on: ubuntu-latest
