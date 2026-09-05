@@ -59,7 +59,6 @@ def raw_response_values(record: RawResponseRecord) -> dict[str, Any]:
     return {
         "city_id": prepared.city_id,
         "pipeline_run_id": prepared.run_id,
-        "pipeline_run_id": prepared.run_id,
         "window_start": prepared.window_start,
         "window_end": prepared.window_end,
         "http_status": prepared.http_status,
