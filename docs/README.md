@@ -7,6 +7,7 @@ The `docs/` folder is organized by purpose so contributors can find the right st
 Use these docs when you want to install, run, debug, or validate the project locally.
 
 - `setup/local_postgresql_first_workflow.md`
+- `setup/local_storage_workflow.md`
 - `setup/run_and_debug_guide.md`
 - `setup/fresh_start_pipeline_bringup.md`
 - `setup/postgresql_migrations_guide.md`

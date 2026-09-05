@@ -2,6 +2,8 @@
 
 Apply the database schema without creating tables by hand. Alembic creates tables on an empty database and applies later changes the same way.
 
+For the full local bring-up flow (Docker Postgres, seed cities, verify rows, run persistence tests), see [local_storage_workflow.md](local_storage_workflow.md).
+
 ## Setup (once)
 
 1. Have an empty Postgres database (local install, Docker, or Azure).
