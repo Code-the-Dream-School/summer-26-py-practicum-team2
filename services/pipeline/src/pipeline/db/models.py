@@ -6,17 +6,20 @@ from decimal import Decimal
 
 from sqlalchemy import (
     Boolean,
+    BigInteger,
     CheckConstraint,
     DateTime,
     Enum as SAEnum,
     Float,
     ForeignKey,
     Integer,
+    JSON,
     Numeric,
     Text,
     UniqueConstraint,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.dialects.postgresql import JSONB
 
 
 class Base(DeclarativeBase):
@@ -108,3 +111,65 @@ class GoldAirQuality(Base):
     nh3: Mapped[Decimal | None] = mapped_column(Numeric, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class RawResponse(Base):
+    """Stores one raw OpenWeather response for a city and pipeline run."""
+
+    __tablename__ = "raw_responses"
+    __table_args__ = (
+        UniqueConstraint(
+            "city_id",
+            "pipeline_run_id",
+            "window_start",
+            "window_end",
+            name="uq_raw_responses_city_run_window",
+        ),
+        CheckConstraint(
+            "window_end > window_start",
+            name="ck_raw_responses_valid_window",
+        ),
+    )
+
+    raw_id: Mapped[int] = mapped_column(
+        BigInteger,
+        primary_key=True,
+        autoincrement=True,
+    )
+    city_id: Mapped[str] = mapped_column(
+        ForeignKey("cities.city_id"),
+        nullable=False,
+    )
+    pipeline_run_id: Mapped[int] = mapped_column(
+        ForeignKey("pipeline_runs.id"),
+        nullable=False,
+    )
+    window_start: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )
+    window_end: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )
+    http_status: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
+    raw_response: Mapped[dict | list | None] = mapped_column(
+    JSON().with_variant(JSONB(), "postgresql"),
+    nullable=True,
+    )
+    response_text: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+    error_message: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+    fetched_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
