@@ -9,6 +9,7 @@ export type CityOverview = {
   id: string;
   cityName: string;
   aqi: number;
+  observedAt: string;
 };
 
 export async function fetchCities(): Promise<CityListItem[]> {
@@ -20,8 +21,8 @@ export async function fetchCities(): Promise<CityListItem[]> {
 export type CityTrend = {
   id: string;
   cityName: string;
-  aqi: number;
-  trend: { time: string; aqi: number }[];
+  aqi: number | null;
+  trend: { observedAt: string; aqi: number }[];
 };
 
 export async function fetchCityTrend(cityId: string): Promise<CityTrend> {

@@ -1,15 +1,13 @@
 # City Air Tracker — Dashboard (prototype)
 
-Working prototype of the dashboard: a Flask API and a React frontend, both
-using **sample/hardcoded data** for now — nothing is connected to Postgres
-yet. Built this way so the frontend/API contract could be worked out without
-waiting on the schema/persistence work to finish.
+Dashboard service with a Flask API and React frontend. The API reads the
+pipeline's PostgreSQL `cities` and `gold_air_quality` tables.
 
 ## Structure
 
 ```
 services/dashboard/
-├── server.py          # Flask API, sample data
+├── server.py          # Flask API over PostgreSQL dashboard tables
 └── frontend/           # Vite + React + TypeScript + Tailwind v4
     └── src/
         ├── api/client.ts          # fetch functions the frontend uses
@@ -42,7 +40,7 @@ You need both servers running at the same time, in two terminals.
 ```bash
 cd services/dashboard
 source ../../.venv/bin/activate   # or wherever your venv lives
-pip install flask flask-cors      # if not already installed
+pip install -r ../../requirements.txt
 python server.py
 ```
 Runs on `http://localhost:8000`.
@@ -55,14 +53,14 @@ npm run dev
 ```
 Runs on `http://localhost:5173`.
 
-## API endpoints (current, sample data)
+## API endpoints
 
 | Endpoint | Returns |
 |---|---|
-| `GET /api/cities` | `[{ id, cityName }]` — list for the selector |
-| `GET /api/cities/overview` | `[{ id, cityName, aqi }]` — for the overview grid |
-| `GET /api/cities/<id>/trend` | `{ id, cityName, aqi, trend: [{ time, aqi }] }` — last few hours |
-| `GET /api/cities/<id>/aggregates?period=daily\|weekly` | `[{ date, aqi }]` — 14-day synthetic history, daily rows or weekly averages |
+| `GET /api/cities` | `[{ id, cityName }]` — active cities with available readings |
+| `GET /api/cities/overview` | `[{ id, cityName, aqi, observedAt }]` — latest reading for each active city |
+| `GET /api/cities/<id>/trend` | `{ id, cityName, aqi, trend: [{ observedAt, aqi }] }` — last 24 hours, ordered by UTC timestamp |
+| `GET /api/cities/<id>/aggregates?period=daily\|weekly` | `[{ date, aqi }]` — 14-day daily averages or seven-day grouped averages |
 
 ## UI layout
 
@@ -81,12 +79,12 @@ Only one tab's chart renders at a time, controlled by `activeTab` state in
 
 ```ts
 type CityListItem = { id: string; cityName: string };
-type CityOverview = { id: string; cityName: string; aqi: number };
+type CityOverview = { id: string; cityName: string; aqi: number; observedAt: string };
 type CityTrend = {
   id: string;
   cityName: string;
-  aqi: number;
-  trend: { time: string; aqi: number }[];
+  aqi: number | null;
+  trend: { observedAt: string; aqi: number }[];
 };
 type AggregatePoint = { date: string; aqi: number };
 ```
@@ -101,22 +99,21 @@ is in flight, and `ErrorState` (a card with a "Try again" button that
 re-triggers the fetch) if it fails — for example, if the Flask server isn't
 running. Both replace the earlier plain-text placeholders.
 
-## What's NOT done yet
+## Configuration
 
-- **No real database connection.** `server.py` returns `SAMPLE_CITIES`, a
-  hardcoded list, and `/aggregates` generates random daily values around
-  each city's base AQI. Once `gold_air_quality` exists with real rows, the
-  plan is to swap the body of each route to query Postgres instead — the
-  response shapes above should stay the same so the frontend doesn't need
-  to change.
-- No environment variable for the API base URL — it's hardcoded in
+- Set `DATABASE_URL` in the repository `.env` file. It uses the same
+  SQLAlchemy PostgreSQL URL as the pipeline, for example:
+  `postgresql+psycopg://cityair:cityair@localhost:5432/cityair`.
+- The database must have the pipeline migrations applied and contain active
+  cities with rows in `gold_air_quality` before the dashboard has data to show.
+- No environment variable for the frontend API base URL — it's hardcoded in
   `src/api/client.ts` (`http://localhost:8000/api`)
 - `CitySummary` and `CityOverviewGrid` currently show overlapping info
   (both display the selected city's AQI) — left in on purpose so the team
   can decide whether to drop one
-- `ComparisonChart`'s `mergeByTime` assumes all compared cities share the
-  same time labels (true for sample data) — worth revisiting once real
-  timestamps are involved
+- `ComparisonChart` merges city readings by their UTC `observedAt` timestamp,
+  so a missing reading appears as a gap rather than being matched to a
+  display label
 
 ## Known redundancy / open decisions
 
