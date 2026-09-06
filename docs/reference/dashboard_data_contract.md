@@ -38,7 +38,7 @@ These apply to every shape in this document.
 | 4 | Poor |
 | 5 | Very Poor |
 
-The API returns the number. 
+The API returns the number. Labels and colors belong to the frontend (`AqiBadge.tsx`). 
 
 ## 3. Latest observation by city
 
@@ -74,6 +74,8 @@ One city over time, for the trend chart. Ordered oldest to newest.
 | `trend[]` | Array | Yes | One entry per gold row in the window |
 | `trend[].observedAt` | Timestamp | Yes | `gold_air_quality.observed_at` |
 | `trend[].aqi` | Integer 1–5 | Yes | `gold_air_quality.aqi` |
+| `trend[].pollutants` | Object | Yes | Eight gold pollutant columns |
+| `trend[].pollutants.co` (and `no`, `no2`, `o3`, `so2`, `pm2_5`, `pm10`, `nh3`) | Number, or `null` | Yes | Matching gold column; `null` when missing |
 
 ```json
 {
@@ -81,8 +83,22 @@ One city over time, for the trend chart. Ordered oldest to newest.
   "cityName": "Raleigh, NC",
   "aqi": 4,
   "trend": [
-    { "observedAt": "2026-09-04T09:00:00+00:00", "aqi": 2 },
-    { "observedAt": "2026-09-04T11:00:00+00:00", "aqi": 4 }
+    {
+      "observedAt": "2026-09-04T09:00:00+00:00",
+      "aqi": 2,
+      "pollutants": {
+        "co": 270.4, "no": 5.9, "no2": 43.2, "o3": 4.8,
+        "so2": 14.5, "pm2_5": 13.4, "pm10": 15.5, "nh3": 0.3
+      }
+    },
+    {
+      "observedAt": "2026-09-04T11:00:00+00:00",
+      "aqi": 4,
+      "pollutants": {
+        "co": null, "no": null, "no2": null, "o3": null,
+        "so2": null, "pm2_5": null, "pm10": null, "nh3": null
+      }
+    }
   ]
 }
 ```
@@ -90,6 +106,8 @@ One city over time, for the trend chart. Ordered oldest to newest.
 Window: the last 24 hours. Gold is hourly, so a complete window is 24 points, but gaps are normal and the array is not padded. Consumers must not assume a fixed length or evenly spaced points.
 
 `aqi` is nullable here because a city can have readings that are all older than the window.
+
+Pollutants are nested on each trend point so the hourly tab can show the latest hour without a second request (AIR-45). Units are µg/m³. Labels belong to the frontend (`PollutantsPanel.tsx`).
 
 ## 5. City comparison fields
 
@@ -110,21 +128,28 @@ Daily and weekly averages per city, for the summary view.
 | `date` | Text | Yes | Bucket label |
 | `aqi` | Number | Yes | Mean AQI in the bucket, one decimal |
 
+Daily:
+
 ```json
-[
-  { "date": "2026-09-02", "aqi": 3.0 },
-  { "date": "2026-09-04", "aqi": 2.5 }
-]
+[{ "date": "2026-09-02", "aqi": 3.0 }, { "date": "2026-09-04", "aqi": 2.5 }]
+```
+
+Weekly:
+
+```json
+[{ "date": "2026-W36 (partial)", "aqi": 2.5 }]
 ```
 
 Window: the last 14 days.
 
 Rules that need to hold for these numbers to mean anything:
 
-- **Buckets are calendar-based.** A daily bucket is one UTC date; a weekly bucket is one calendar week. Buckets must be derived from `observed_at`, not from the position of a row in a list, otherwise gaps silently stretch a bucket beyond its label.
+- **Buckets are calendar-based.** A daily bucket is one UTC date (`YYYY-MM-DD`). A weekly bucket is one UTC ISO week (Monday start), labeled `{year}-W{week}` (`2026-W36`). Both are derived from `observed_at`, not from the position of a row in a list.
 - **Empty buckets are omitted, not zero-filled.** An absent day means no data, which is not the same as an AQI of 0 — and 0 is not even a valid AQI.
-- **Averaging is defined once.** A weekly average is the **mean of all hourly readings** in that UTC ISO week (Monday start), not the mean of that week's daily means. The two differ whenever days have unequal reading counts.
-- **Partial buckets are labeled.** A week with fewer than seven distinct UTC dates is labeled `{year}-W{week} (partial)`, for example `2026-W36 (partial)`.
+- **Weekly average is the mean of all hourly readings** in that UTC ISO week, not the mean of that week's daily means.
+- **Partial weeks are labeled.** Fewer than seven distinct UTC dates → `{year}-W{week} (partial)`.
+
+Do not group every 7 consecutive daily rows as `"Week of {first_date}"`. That stretches a bucket across a gap and uses the mean of daily means.
 
 The upsert rule in [gold_table_contract.md](gold_table_contract.md) is what makes these averages trustworthy: one row per city per hour means no double counting.
 
@@ -135,4 +160,3 @@ The upsert rule in [gold_table_contract.md](gold_table_contract.md) is what make
 | Cities without readings | An active, seeded city with no gold rows is currently invisible to the dashboard. Acceptable for a demo; confusing on a fresh database. |
 | Staleness | Overview cards show `observedAt`, so a reading from days ago is visible as a timestamp. There is still no separate stale/fresh badge. |
 | Endpoint disagreement | The latest observation uses the newest reading at any age, while trend looks back only 24 hours. The same city can report an AQI in one place and `null` in another. |
-| Pollutants unused | Gold stores `co`, `no`, `no2`, `o3`, `so2`, `pm2_5`, `pm10`, `nh3`, and the dashboard exposes none of them. We need to show them or record that AQI alone is intended. |
