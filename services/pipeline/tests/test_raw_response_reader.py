@@ -159,3 +159,31 @@ def test_read_gold_ready_rows_end_to_end() -> None:
     assert len(rows) == 2
     assert all(row["city_id"] == "US_RAL_01" for row in rows)
     assert {row["aqi"] for row in rows} == {2, 3}
+
+def test_flatten_raw_response_skips_entries_with_invalid_types() -> None:
+    bad_payload = {
+        "list": [
+            {"dt": "not-a-number", "main": {"aqi": 2}, "components": {}},
+            {"dt": 1606482000, "main": {"aqi": "not-a-number"}, "components": {}},
+            {"dt": 1606485600, "main": {"aqi": 3}, "components": {"co": "not-a-number"}},
+        ]
+    }
+    fake_row = RawResponse(
+        city_id="US_RAL_01", pipeline_run_id=1,
+        window_start=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        window_end=datetime(2026, 1, 2, tzinfo=timezone.utc),
+        http_status=200, raw_response=bad_payload,
+    )
+
+    assert flatten_raw_response(fake_row) == []
+
+
+def test_flatten_raw_response_returns_empty_when_payload_is_not_a_dict() -> None:
+    fake_row = RawResponse(
+        city_id="US_RAL_01", pipeline_run_id=1,
+        window_start=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        window_end=datetime(2026, 1, 2, tzinfo=timezone.utc),
+        http_status=200, raw_response=["not", "a", "dict"],
+    )
+
+    assert flatten_raw_response(fake_row) == []

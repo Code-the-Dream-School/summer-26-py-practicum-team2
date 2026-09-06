@@ -31,36 +31,45 @@ def read_raw_responses(
         return list(session.scalars(statement).all())
 
 
+
 def flatten_raw_response(raw_response_row: RawResponse) -> list[dict[str, Any]]:
     """Turn one raw_responses row's JSON payload into gold-ready row dicts.
 
     Returns one dict per hourly reading, already shaped for upsert_gold():
     {city_id, observed_at, aqi, co, no, no2, o3, so2, pm2_5, pm10, nh3}.
-    Malformed or missing entries are skipped, not raised, so one bad
-    reading doesn't fail the whole batch.
+
+    Returns an empty list if the payload isn't a dict, doesn't have a "list"
+    key, or that key isn't a list. Within the list, entries that are missing
+    expected fields or have values of the wrong type are skipped individually,
+    not raised, so one bad reading doesn't fail the whole batch.
     """
     payload = raw_response_row.raw_response
-    if not payload or "list" not in payload:
+    if not isinstance(payload, dict) or "list" not in payload:
+        return []
+
+    entries = payload["list"]
+    if not isinstance(entries, list):
         return []
 
     rows: list[dict[str, Any]] = []
-    for entry in payload["list"]:
+    for entry in entries:
         try:
-            dt = entry["dt"]
-            aqi = entry["main"]["aqi"]
+            observed_at = datetime.fromtimestamp(int(entry["dt"]), tz=timezone.utc)
+            aqi = int(entry["main"]["aqi"])
             components = entry.get("components", {})
-        except (KeyError, TypeError):
+            pollutants = {
+                field: float(components[field]) if components.get(field) is not None else None
+                for field in POLLUTANT_FIELDS
+            }
+        except (KeyError, TypeError, ValueError):
             continue
 
-        row: dict[str, Any] = {
+        rows.append({
             "city_id": raw_response_row.city_id,
-            "observed_at": datetime.fromtimestamp(int(dt), tz=timezone.utc),
-            "aqi": int(aqi),
-        }
-        for field in POLLUTANT_FIELDS:
-            value = components.get(field)
-            row[field] = float(value) if value is not None else None
-        rows.append(row)
+            "observed_at": observed_at,
+            "aqi": aqi,
+            **pollutants,
+        })
 
     return rows
 
