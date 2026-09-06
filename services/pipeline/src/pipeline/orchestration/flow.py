@@ -18,8 +18,16 @@ def load_cities_task() -> list[dict[str, str]]:
 
 
 @task(name="extract")
-def extract_task(cities: list[dict[str, str]], history_hours: int) -> list[dict]:
-    return extract_cities(cities, history_hours=history_hours)
+def extract_task(
+    cities: list[dict[str, str]],
+    history_hours: int,
+    pipeline_run_id: int,
+) -> list[dict]:
+    return extract_cities(
+        cities,
+        history_hours=history_hours,
+        pipeline_run_id=pipeline_run_id,
+    )
 
 # Runs the pipeline's ETL stages in order.
 @flow(name="city-air-tracker-pipeline")
@@ -38,7 +46,7 @@ def run_pipeline_flow(history_hours: int = 24, source: str = "openweather") -> l
 
     try:
         cities = load_cities_task()
-        results = extract_task(cities, history_hours)
+        results = extract_task(cities, history_hours, pipeline_run_id)
         log.info("Extract stage complete: %d/%d cities", len(results), len(cities))
 
         update_pipeline_run_status(

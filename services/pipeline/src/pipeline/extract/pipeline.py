@@ -4,7 +4,8 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
-from pipeline.extract.air_pollution import AirQualityRecord, fetch_air_pollution_history
+from pipeline.db.raw_responses import RawResponseRecord, save_raw_response
+from pipeline.extract.air_pollution import (AirQualityRecord, fetch_air_pollution_history_result,)
 from pipeline.extract.geocoding import GeocodingNotFoundError, geocode_city
 
 # Geocodes one city and fetch its recent air quality history. Returns None if the city cannot be geocoded.
@@ -14,6 +15,7 @@ def extract_city(
     history_hours: int = 24,
     api_key: str | None = None,
     db_session: Session | None = None,
+    pipeline_run_id: int | None = None,
     now: datetime | None = None,
 ) -> dict | None:
    
@@ -31,13 +33,28 @@ def extract_city(
 
     end = now or datetime.now(timezone.utc)
     start = end - timedelta(hours=history_hours)
-    records = fetch_air_pollution_history(
+    fetch_result = fetch_air_pollution_history_result(
         lat=location.lat,
         lon=location.lon,
         start=start,
         end=end,
         api_key=api_key,
     )
+
+    if pipeline_run_id is not None:
+        save_raw_response(
+            RawResponseRecord(
+                city_id=city["city_id"],
+                run_id=pipeline_run_id,
+                window_start=start,
+                window_end=end,
+                http_status=fetch_result.http_status,
+                raw_response=fetch_result.raw_response,
+                response_text=fetch_result.response_text,
+            )
+        )
+
+    records = fetch_result.records
 
     return {
         "city_id": city["city_id"],
@@ -55,6 +72,7 @@ def extract_cities(
     history_hours: int = 24,
     api_key: str | None = None,
     db_session: Session | None = None,
+    pipeline_run_id: int | None = None,
 ) -> list[dict]:
 
     results = [
@@ -66,6 +84,7 @@ def extract_cities(
                 history_hours=history_hours,
                 api_key=api_key,
                 db_session=db_session,
+                pipeline_run_id=pipeline_run_id,
             )
         )
         is not None

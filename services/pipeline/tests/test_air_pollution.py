@@ -21,9 +21,18 @@ from pipeline.extract.air_pollution import (  # noqa: E402
 
 
 class FakeResponse:
-    def __init__(self, payload, *, status_error: Exception | None = None):
+    def __init__(
+        self,
+        payload,
+        *,
+        status_error: Exception | None = None,
+        status_code: int = 200,
+        text: str | None = None,
+    ):
         self._payload = payload
         self._status_error = status_error
+        self.status_code = status_code
+        self.text = text if text is not None else str(payload)
 
     def raise_for_status(self) -> None:
         if self._status_error is not None:
@@ -31,7 +40,6 @@ class FakeResponse:
 
     def json(self):
         return self._payload
-
 
 class FakeSession:
     def __init__(self, response: FakeResponse):
