@@ -10,7 +10,19 @@ from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from sqlalchemy import Boolean, Column, DateTime, Integer, MetaData, String, Table, create_engine, func, select
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Integer,
+    MetaData,
+    Numeric,
+    String,
+    Table,
+    create_engine,
+    func,
+    select,
+)
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -31,7 +43,17 @@ gold_air_quality = Table(
     Column("city_id", String, nullable=False),
     Column("observed_at", DateTime(timezone=True), nullable=False),
     Column("aqi", Integer, nullable=False),
+    Column("co", Numeric),
+    Column("no", Numeric),
+    Column("no2", Numeric),
+    Column("o3", Numeric),
+    Column("so2", Numeric),
+    Column("pm2_5", Numeric),
+    Column("pm10", Numeric),
+    Column("nh3", Numeric),
 )
+
+POLLUTANT_COLUMNS = ("co", "no", "no2", "o3", "so2", "pm2_5", "pm10", "nh3")
 
 
 def _get_engine() -> Engine:
@@ -49,6 +71,13 @@ def _as_utc(value: datetime) -> datetime:
 
 def _city_label(city_name: str, state: str | None, country: str) -> str:
     return f"{city_name}, {state or country}"
+
+
+def _pollutants(row) -> dict[str, float | None]:
+    return {
+        field: float(row[field]) if row[field] is not None else None
+        for field in POLLUTANT_COLUMNS
+    }
 
 
 def _city_rows(engine: Engine):
@@ -126,7 +155,11 @@ def create_app(
         start = end - timedelta(hours=24)
         city_statement = select(cities.c.city_name, cities.c.state, cities.c.country).where(cities.c.city_id == city_id)
         trend_statement = (
-            select(gold_air_quality.c.observed_at, gold_air_quality.c.aqi)
+            select(
+                gold_air_quality.c.observed_at,
+                gold_air_quality.c.aqi,
+                *[gold_air_quality.c[field] for field in POLLUTANT_COLUMNS],
+            )
             .where(
                 gold_air_quality.c.city_id == city_id,
                 gold_air_quality.c.observed_at >= start,
@@ -143,7 +176,11 @@ def create_app(
             "cityName": _city_label(city["city_name"], city["state"], city["country"]),
             "aqi": trend[-1]["aqi"] if trend else None,
             "trend": [
-                {"observedAt": _as_utc(row["observed_at"]).isoformat(), "aqi": row["aqi"]}
+                {
+                    "observedAt": _as_utc(row["observed_at"]).isoformat(),
+                    "aqi": row["aqi"],
+                    "pollutants": _pollutants(row),
+                }
                 for row in trend
             ],
         })
