@@ -18,11 +18,22 @@ export async function fetchCities(): Promise<CityListItem[]> {
   return res.json();
 }
 
+export type Pollutants = {
+  co: number | null;
+  no: number | null;
+  no2: number | null;
+  o3: number | null;
+  so2: number | null;
+  pm2_5: number | null;
+  pm10: number | null;
+  nh3: number | null;
+};
+
 export type CityTrend = {
   id: string;
   cityName: string;
   aqi: number | null;
-  trend: { observedAt: string; aqi: number }[];
+  trend: { observedAt: string; aqi: number; pollutants: Pollutants }[];
 };
 
 export async function fetchCityTrend(cityId: string): Promise<CityTrend> {

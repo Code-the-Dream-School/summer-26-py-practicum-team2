@@ -36,11 +36,26 @@ def _client():
         connection.execute(
             insert(server.gold_air_quality),
             [
-                {"gold_id": 1, "city_id": "US_RAL_01", "observed_at": NOW - timedelta(hours=3), "aqi": 2},
-                {"gold_id": 2, "city_id": "US_RAL_01", "observed_at": NOW - timedelta(hours=1), "aqi": 4},
-                {"gold_id": 3, "city_id": "US_RAL_01", "observed_at": NOW - timedelta(days=2), "aqi": 3},
-                {"gold_id": 4, "city_id": "GB_LON_01", "observed_at": NOW - timedelta(hours=2), "aqi": 1},
-                {"gold_id": 5, "city_id": "US_NYC_99", "observed_at": NOW - timedelta(hours=1), "aqi": 5},
+                {
+                    "gold_id": 1, "city_id": "US_RAL_01", "observed_at": NOW - timedelta(hours=3), "aqi": 2,
+                    "co": 270.4, "no": 5.9, "no2": 43.2, "o3": 4.8, "so2": 14.5, "pm2_5": 13.4, "pm10": 15.5, "nh3": 0.3,
+                },
+                {
+                    "gold_id": 2, "city_id": "US_RAL_01", "observed_at": NOW - timedelta(hours=1), "aqi": 4,
+                    "co": None, "no": None, "no2": None, "o3": None, "so2": None, "pm2_5": None, "pm10": None, "nh3": None,
+                },
+                {
+                    "gold_id": 3, "city_id": "US_RAL_01", "observed_at": NOW - timedelta(days=2), "aqi": 3,
+                    "co": None, "no": None, "no2": None, "o3": None, "so2": None, "pm2_5": None, "pm10": None, "nh3": None,
+                },
+                {
+                    "gold_id": 4, "city_id": "GB_LON_01", "observed_at": NOW - timedelta(hours=2), "aqi": 1,
+                    "co": None, "no": None, "no2": None, "o3": None, "so2": None, "pm2_5": None, "pm10": None, "nh3": None,
+                },
+                {
+                    "gold_id": 5, "city_id": "US_NYC_99", "observed_at": NOW - timedelta(hours=1), "aqi": 5,
+                    "co": None, "no": None, "no2": None, "o3": None, "so2": None, "pm2_5": None, "pm10": None, "nh3": None,
+                },
             ],
         )
     return server.create_app(engine=engine, now_provider=lambda: NOW).test_client()
@@ -58,6 +73,7 @@ def test_cities_and_overview_only_include_active_cities_with_readings() -> None:
         {"id": "US_RAL_01", "cityName": "Raleigh, NC, US"},
     ]
     assert overview.status_code == 200
+    assert overview.json is not None
     assert overview.json[1]["aqi"] == 4
     assert overview.json[1]["observedAt"] == "2026-09-04T11:00:00+00:00"
 
@@ -66,10 +82,25 @@ def test_trend_uses_ordered_iso_timestamps() -> None:
     response = _client().get("/api/cities/US_RAL_01/trend")
 
     assert response.status_code == 200
+    assert response.json is not None
     assert response.json["aqi"] == 4
     assert response.json["trend"] == [
-        {"observedAt": "2026-09-04T09:00:00+00:00", "aqi": 2},
-        {"observedAt": "2026-09-04T11:00:00+00:00", "aqi": 4},
+        {
+            "observedAt": "2026-09-04T09:00:00+00:00",
+            "aqi": 2,
+            "pollutants": {
+                "co": 270.4, "no": 5.9, "no2": 43.2, "o3": 4.8,
+                "so2": 14.5, "pm2_5": 13.4, "pm10": 15.5, "nh3": 0.3,
+            },
+        },
+        {
+            "observedAt": "2026-09-04T11:00:00+00:00",
+            "aqi": 4,
+            "pollutants": {
+                "co": None, "no": None, "no2": None, "o3": None,
+                "so2": None, "pm2_5": None, "pm10": None, "nh3": None,
+            },
+        },
     ]
 
 

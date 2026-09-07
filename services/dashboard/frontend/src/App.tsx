@@ -11,6 +11,7 @@ import AggregatesChart from "./components/charts/AggregatesChart";
 import Tabs from "./components/layout/Tabs";
 import LoadingState from "./components/status/LoadingState";
 import ErrorState from "./components/status/ErrorState";
+import PollutantsPanel from "./components/city/PollutantsPanel";
 import {
   fetchCities,
   fetchCityTrend,
@@ -100,7 +101,12 @@ function App() {
           <Tabs tabs={CHART_TABS} activeId={activeTab} onChange={setActiveTab} />
 
           {activeTab === "hourly" && (
-            <TrendChart cityName={selectedCity.cityName} data={selectedCity.trend} />
+            <div className="space-y-4">
+              <TrendChart cityName={selectedCity.cityName} data={selectedCity.trend} />
+              {selectedCity.trend.length > 0 && (
+                <PollutantsPanel pollutants={selectedCity.trend[selectedCity.trend.length - 1].pollutants} />
+              )}
+            </div>
           )}
 
           {activeTab === "history" && (
