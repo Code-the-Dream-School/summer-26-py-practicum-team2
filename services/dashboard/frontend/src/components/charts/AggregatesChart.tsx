@@ -61,7 +61,7 @@ export default function AggregatesChart({ cityId, cityName }: AggregatesChartPro
             tickLine={false}
           />
           <YAxis
-            domain={[1, 5]}
+            domain={[0, 5]}
             ticks={[1, 2, 3, 4, 5]}
             tick={{ fontSize: 12, fill: "#9ca3af" }}
             axisLine={{ stroke: "#e5e7eb" }}

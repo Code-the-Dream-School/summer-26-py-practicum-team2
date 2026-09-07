@@ -13,8 +13,6 @@ from pipeline.db.session import get_engine
 
 @dataclass(frozen=True)
 class PipelineRunStatusUpdate:
-    """Fields to apply when a run finishes or changes state."""
-
     status: str
     city_count: int | None = None
     raw_response_count: int | None = None
@@ -29,9 +27,9 @@ def create_pipeline_run(
     history_hours: int,
     window_start_utc: datetime,
     window_end_utc: datetime,
+    engine=None,
 ) -> int:
-    """Insert a new pipeline_runs row with status=running and return its internal id."""
-    with Session(get_engine()) as session:
+    with Session(engine or get_engine()) as session:
         run = PipelineRun(
             run_id=run_id,
             source=source,
@@ -47,9 +45,12 @@ def create_pipeline_run(
         return run.id
 
 
-def update_pipeline_run_status(run_id: str, update: PipelineRunStatusUpdate) -> None:
-    """Apply status/result fields to the pipeline_runs row identified by run_id."""
-    with Session(get_engine()) as session:
+def update_pipeline_run_status(
+    run_id: str,
+    update: PipelineRunStatusUpdate,
+    engine=None,
+) -> None:
+    with Session(engine or get_engine()) as session:
         run = session.query(PipelineRun).filter_by(run_id=run_id).one()
         run.status = PipelineRunStatus(update.status)
         if update.city_count is not None:

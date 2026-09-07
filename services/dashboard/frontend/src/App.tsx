@@ -117,7 +117,7 @@ function App() {
             <div className="space-y-3">
               <p className="text-sm text-gray-500">Compare cities</p>
               <CityMultiSelect cities={cities} selectedIds={compareIds} onToggle={toggleCompare} />
-              <ComparisonChart cities={compareData} />
+              <ComparisonChart cities={compareData} allCityIds={cities.map((c) => c.id)} />
             </div>
           )}
         </div>

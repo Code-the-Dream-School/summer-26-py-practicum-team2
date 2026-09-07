@@ -1,5 +1,14 @@
 city_id,city_name,state,country,is_active
 US_RAL_01,Raleigh,NC,US,TRUE
-US_DUR_02,Durham,NC,US,TRUE
+US_DUR_02,Durham,NC,US,FALSE
+US_HOU_01,Houston,TX,US,TRUE
 GB_LON_01,London,,GB,TRUE
 US_NYC_99,New York,NY,US,FALSE
+US_LAX_01,Los Angeles,CA,US,TRUE
+US_CHI_01,Chicago,IL,US,TRUE
+US_MIA_01,Miami,FL,US,TRUE
+US_SEA_01,Seattle,WA,US,TRUE
+JP_TYO_01,Tokyo,,JP,TRUE
+BR_SAO_01,Sao Paulo,,BR,TRUE
+NL_AMS_01,Amsterdam,,NL,TRUE
+FR_PAR_01,Paris,,FR,TRUE
