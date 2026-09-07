@@ -40,6 +40,15 @@ class AirQualityRecord:
     pm10: float
     nh3: float
 
+
+@dataclass(frozen=True)
+class AirPollutionFetchResult:
+    records: list[AirQualityRecord]
+    http_status: int
+    raw_response: dict
+    response_text: str
+
+
 # Fetchs hourly historical air quality for a coordinate over a UTC time range.
 def fetch_air_pollution_history(
     lat: float,
@@ -51,13 +60,35 @@ def fetch_air_pollution_history(
     session: requests.Session | None = None,
     timeout_seconds: float = 10.0,
 ) -> list[AirQualityRecord]:
+    result = fetch_air_pollution_history_result(
+        lat=lat,
+        lon=lon,
+        start=start,
+        end=end,
+        api_key=api_key,
+        session=session,
+        timeout_seconds=timeout_seconds,
+    )
+    return result.records
 
+def fetch_air_pollution_history_result(
+    lat: float,
+    lon: float,
+    start: datetime,
+    end: datetime,
+    *,
+    api_key: str | None = None,
+    session: requests.Session | None = None,
+    timeout_seconds: float = 10.0,
+) -> AirPollutionFetchResult:
     if start > end:
         raise ValueError("start must be before end")
 
     resolved_api_key = api_key or os.getenv("OPENWEATHER_API_KEY")
     if not resolved_api_key:
-        raise AirPollutionConfigError("OPENWEATHER_API_KEY is required for air pollution requests")
+        raise AirPollutionConfigError(
+            "OPENWEATHER_API_KEY is required for air pollution requests"
+        )
 
     resolved_session = session or requests.Session()
     params = {
@@ -69,25 +100,44 @@ def fetch_air_pollution_history(
     }
 
     try:
-        response = resolved_session.get(AIR_POLLUTION_HISTORY_URL, params=params, timeout=timeout_seconds)
+        response = resolved_session.get(
+            AIR_POLLUTION_HISTORY_URL,
+            params=params,
+            timeout=timeout_seconds,
+        )
         response.raise_for_status()
     except requests.RequestException as exc:
-        raise AirPollutionError(f"OpenWeather air pollution request failed for ({lat}, {lon})") from exc
+        raise AirPollutionError(
+            f"OpenWeather air pollution request failed for ({lat}, {lon})"
+        ) from exc
 
     try:
         payload = response.json()
     except ValueError as exc:
-        raise AirPollutionError("OpenWeather air pollution response was not valid JSON") from exc
+        raise AirPollutionError(
+            "OpenWeather air pollution response was not valid JSON"
+        ) from exc
 
     try:
         entries = payload["list"]
     except (KeyError, TypeError) as exc:
-        raise AirPollutionError("OpenWeather air pollution response was missing 'list'") from exc
+        raise AirPollutionError(
+            "OpenWeather air pollution response was missing 'list'"
+        ) from exc
 
     try:
-        return [_parse_record(entry) for entry in entries]
+        records = [_parse_record(entry) for entry in entries]
     except (KeyError, TypeError, ValueError) as exc:
-        raise AirPollutionError("OpenWeather air pollution response was missing expected fields") from exc
+        raise AirPollutionError(
+            "OpenWeather air pollution response was missing expected fields"
+        ) from exc
+
+    return AirPollutionFetchResult(
+        records=records,
+        http_status=response.status_code,
+        raw_response=payload,
+        response_text=response.text,
+    )
 
 
 def _parse_record(entry: dict) -> AirQualityRecord:
