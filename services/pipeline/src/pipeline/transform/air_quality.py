@@ -1,7 +1,7 @@
 """Transform stage: turns persisted raw OpenWeather responses into gold_air_quality rows.
 
 Reads `raw_air_pollution_responses` (written by the extract stage) and produces the
-rows `pipeline.db.gold.upsert_gold` expects, per `gold_table_contract.md` and
+rows `pipeline.load.gold.upsert_gold` expects, per `gold_table_contract.md` and
 `city_air_tracker_schema_design.md` section 5. One malformed hourly entry inside a
 raw response's `list` is skipped, not fatal to the whole batch — the same tolerance
 the raw_response_contract calls for at the source-record level.
@@ -14,9 +14,9 @@ from datetime import datetime, timezone
 
 from sqlalchemy import Engine
 
-from pipeline.db.gold import GoldUpsertResult, upsert_gold
+from pipeline.load.gold import GoldUpsertResult, upsert_gold
 from pipeline.db.models import RawAirPollutionResponse
-from pipeline.db.raw_responses import list_raw_responses_for_run
+from pipeline.extract.raw_responses import list_raw_responses_for_run
 
 log = logging.getLogger(__name__)
 

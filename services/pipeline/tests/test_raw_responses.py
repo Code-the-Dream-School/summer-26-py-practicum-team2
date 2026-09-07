@@ -11,7 +11,7 @@ if str(PROJECT_SRC) not in sys.path:
     sys.path.insert(0, str(PROJECT_SRC))
 
 from pipeline.db.models import City, PipelineRun, PipelineRunStatus  # noqa: E402
-from pipeline.db.raw_responses import (  # noqa: E402
+from pipeline.extract.raw_responses import (  # noqa: E402
     RawResponseRecord,
     prepare_raw_response_record,
     raw_response_values,

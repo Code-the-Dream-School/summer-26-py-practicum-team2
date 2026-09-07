@@ -24,7 +24,7 @@ Load the same city+hour twice: **update** AQI and pollutant columns (`co`, `no`,
 ## Load helper
 
 ```python
-from pipeline.db.gold import upsert_gold
+from pipeline.load.gold import upsert_gold
 
 upsert_gold(sample_rows, engine=engine)
 ```

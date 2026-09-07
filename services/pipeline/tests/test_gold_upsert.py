@@ -13,7 +13,7 @@ PROJECT_SRC = Path(__file__).resolve().parents[1] / "src"
 if str(PROJECT_SRC) not in sys.path:
     sys.path.insert(0, str(PROJECT_SRC))
 
-from pipeline.db.gold import upsert_gold  # noqa: E402
+from pipeline.load.gold import upsert_gold  # noqa: E402
 from pipeline.db.models import Base, City, GoldAirQuality  # noqa: E402
 
 

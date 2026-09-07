@@ -4,7 +4,7 @@ from datetime import datetime
 
 from sqlalchemy import Engine
 
-from pipeline.db.raw_responses import RawResponseRecord, save_raw_response
+from pipeline.extract.raw_responses import RawResponseRecord, save_raw_response
 from pipeline.db.models import RawAirPollutionResponse
 from pipeline.extract.air_pollution import (
     AirPollutionConfigError,

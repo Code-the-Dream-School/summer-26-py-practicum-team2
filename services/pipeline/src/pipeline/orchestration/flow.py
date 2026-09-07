@@ -5,9 +5,9 @@ from datetime import datetime, timedelta, timezone
 
 from prefect import flow, task
 
-from pipeline.db.cities import load_cities_from_db
+from pipeline.extract.cities import load_cities_from_db
 from pipeline.db.models import RawAirPollutionResponse
-from pipeline.db.gold import GoldUpsertResult
+from pipeline.load.gold import GoldUpsertResult
 from pipeline.extract.pipeline import extract_cities
 from pipeline.run_tracking import PipelineRunStatusUpdate, create_pipeline_run, update_pipeline_run_status
 from pipeline.transform.air_quality import run_transform_stage

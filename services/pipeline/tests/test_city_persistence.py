@@ -11,9 +11,9 @@ PROJECT_SRC = Path(__file__).resolve().parents[1] / "src"
 if str(PROJECT_SRC) not in sys.path:
     sys.path.insert(0, str(PROJECT_SRC))
 
-from pipeline.db.cities import import_cities, load_cities_from_db  # noqa: E402
+from pipeline.extract.cities import import_cities, load_cities_from_db  # noqa: E402
 from pipeline.db.models import Base, City  # noqa: E402
-from pipeline.db.seed import get_cities_file  # noqa: E402
+from pipeline.extract.seed import get_cities_file  # noqa: E402
 
 
 def _engine():

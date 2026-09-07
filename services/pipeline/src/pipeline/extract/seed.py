@@ -6,7 +6,7 @@ import argparse
 import os
 from pathlib import Path
 
-from pipeline.db.cities import CityImportResult, import_cities
+from pipeline.extract.cities import CityImportResult, import_cities
 
 PIPELINE_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_CITIES_FILE = PIPELINE_ROOT / "config" / "cities.csv"
