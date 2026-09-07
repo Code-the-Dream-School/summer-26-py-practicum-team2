@@ -8,6 +8,7 @@ from prefect import flow, task
 from pipeline.db.cities import load_cities_from_db
 from pipeline.extract.pipeline import extract_cities
 from pipeline.run_tracking import PipelineRunStatusUpdate, create_pipeline_run, update_pipeline_run_status
+from pipeline.transform.gold_transform import transform_and_load_gold
 
 log = logging.getLogger(__name__)
 
@@ -29,9 +30,20 @@ def extract_task(
         pipeline_run_id=pipeline_run_id,
     )
 
+
+@task(name="transform-and-load")
+def transform_and_load_task(pipeline_run_id: int, engine=None) -> int:
+    result = transform_and_load_gold(pipeline_run_id=pipeline_run_id, engine=engine)
+    return result.stored
+
+
 # Runs the pipeline's ETL stages in order.
 @flow(name="city-air-tracker-pipeline")
-def run_pipeline_flow(history_hours: int = 24, source: str = "openweather") -> list[dict]:
+def run_pipeline_flow(
+    history_hours: int = 24,
+    source: str = "openweather",
+    engine=None,
+) -> list[dict]:
     window_end = datetime.now(timezone.utc)
     window_start = window_end - timedelta(hours=history_hours)
     run_id = window_end.strftime("%Y%m%dT%H%M%SZ")
@@ -41,6 +53,7 @@ def run_pipeline_flow(history_hours: int = 24, source: str = "openweather") -> l
         history_hours=history_hours,
         window_start_utc=window_start,
         window_end_utc=window_end,
+        engine=engine,
     )
     log.info("Pipeline run %s started (pipeline_run_id=%s)", run_id, pipeline_run_id)
 
@@ -49,14 +62,19 @@ def run_pipeline_flow(history_hours: int = 24, source: str = "openweather") -> l
         results = extract_task(cities, history_hours, pipeline_run_id)
         log.info("Extract stage complete: %d/%d cities", len(results), len(cities))
 
+        gold_row_count = transform_and_load_task(pipeline_run_id, engine=engine)
+        log.info("Transform stage complete: %d gold rows", gold_row_count)
+
         update_pipeline_run_status(
             run_id,
             PipelineRunStatusUpdate(
                 status="succeeded",
                 city_count=len(cities),
                 raw_response_count=len(results),
+                gold_row_count=gold_row_count,
                 finished_at=datetime.now(timezone.utc),
             ),
+            engine=engine,
         )
         return results
     except Exception as exc:
@@ -68,5 +86,6 @@ def run_pipeline_flow(history_hours: int = 24, source: str = "openweather") -> l
                 error_message=str(exc),
                 finished_at=datetime.now(timezone.utc),
             ),
+            engine=engine,
         )
         raise
