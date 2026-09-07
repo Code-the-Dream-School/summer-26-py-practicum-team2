@@ -4,10 +4,10 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import Engine
+from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session
 
-from pipeline.db.models import RawResponse
+from pipeline.db.models import RawAirPollutionResponse
 from pipeline.db.session import get_engine
 
 @dataclass(frozen=True)
@@ -58,7 +58,7 @@ def raw_response_values(record: RawResponseRecord) -> dict[str, Any]:
 
     return {
         "city_id": prepared.city_id,
-        "pipeline_run_id": prepared.run_id,
+        "run_id": prepared.run_id,
         "window_start": prepared.window_start,
         "window_end": prepared.window_end,
         "http_status": prepared.http_status,
@@ -72,14 +72,28 @@ def raw_response_values(record: RawResponseRecord) -> dict[str, Any]:
 def save_raw_response(
     record: RawResponseRecord,
     engine: Engine | None = None,
-                    ) -> RawResponse:
+                    ) -> RawAirPollutionResponse:
     values = raw_response_values(record)
     db_engine = engine or get_engine()
 
     with Session(db_engine) as session:
-        raw_response = RawResponse(**values)
+        raw_response = RawAirPollutionResponse(**values)
         session.add(raw_response)
         session.commit()
         session.refresh(raw_response)
 
         return raw_response
+
+
+def list_raw_responses_for_run(
+    run_id: int, engine: Engine | None = None
+) -> list[RawAirPollutionResponse]:
+    """Return every raw response row logged for a given pipeline run, oldest first."""
+    db_engine = engine or get_engine()
+    statement = (
+        select(RawAirPollutionResponse)
+        .where(RawAirPollutionResponse.run_id == run_id)
+        .order_by(RawAirPollutionResponse.fetched_at)
+    )
+    with Session(db_engine) as session:
+        return list(session.scalars(statement).all())

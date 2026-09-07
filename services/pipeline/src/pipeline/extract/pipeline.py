@@ -1,77 +1,84 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 
-from sqlalchemy.orm import Session
+from sqlalchemy import Engine
 
-from pipeline.extract.air_pollution import AirQualityRecord, fetch_air_pollution_history
-from pipeline.extract.geocoding import GeocodingNotFoundError, geocode_city
+from pipeline.db.raw_responses import RawResponseRecord, save_raw_response
+from pipeline.db.models import RawAirPollutionResponse
+from pipeline.extract.air_pollution import (
+    AirPollutionConfigError,
+    AirPollutionError,
+    fetch_air_pollution_history_raw,
+)
 
-# Geocodes one city and fetch its recent air quality history. Returns None if the city cannot be geocoded.
+
+# Fetches one city's raw air-quality history and persists it to raw_air_pollution_responses.
+# Coordinates come from the cities table (locked in at geocode/import time), so this stage
+# never re-geocodes. A failed request is still logged, per the raw-response audit contract.
 def extract_city(
     city: dict[str, str],
     *,
-    history_hours: int = 24,
+    window_start: datetime,
+    window_end: datetime,
+    run_id: int,
     api_key: str | None = None,
-    db_session: Session | None = None,
-    now: datetime | None = None,
-) -> dict | None:
-   
+    engine: Engine | None = None,
+) -> RawAirPollutionResponse:
     try:
-        location = geocode_city(
-            raw_dir=None,
-            city=city["city_name"],
-            country_code=city["country"],
-            state=city.get("state") or None,
+        payload, status = fetch_air_pollution_history_raw(
+            lat=float(city["lat"]),
+            lon=float(city["lon"]),
+            start=window_start,
+            end=window_end,
             api_key=api_key,
-            db_session=db_session,
         )
-    except GeocodingNotFoundError:
-        return None
+        record = RawResponseRecord(
+            city_id=city["city_id"],
+            run_id=run_id,
+            window_start=window_start,
+            window_end=window_end,
+            http_status=status,
+            raw_response=payload,
+        )
+    except AirPollutionConfigError:
+        raise
+    except AirPollutionError as exc:
+        record = RawResponseRecord(
+            city_id=city["city_id"],
+            run_id=run_id,
+            window_start=window_start,
+            window_end=window_end,
+            http_status=0,
+            error_message=str(exc),
+        )
 
-    end = now or datetime.now(timezone.utc)
-    start = end - timedelta(hours=history_hours)
-    records = fetch_air_pollution_history(
-        lat=location.lat,
-        lon=location.lon,
-        start=start,
-        end=end,
-        api_key=api_key,
-    )
+    return save_raw_response(record, engine=engine)
 
-    return {
-        "city_id": city["city_id"],
-        "city_name": location.name,
-        "country": location.country_code,
-        "lat": location.lat,
-        "lon": location.lon,
-        "records": records,
-    }
 
-# Extracts geocode + air quality history for each city, skipping ones that fail to geocode.
+# Extracts and persists raw air-quality history for every city.
 def extract_cities(
     cities: list[dict[str, str]],
     *,
-    history_hours: int = 24,
+    window_start: datetime,
+    window_end: datetime,
+    run_id: int,
     api_key: str | None = None,
-    db_session: Session | None = None,
-) -> list[dict]:
-
+    engine: Engine | None = None,
+) -> list[RawAirPollutionResponse]:
     results = [
-        result
-        for city in cities
-        if (
-            result := extract_city(
-                city,
-                history_hours=history_hours,
-                api_key=api_key,
-                db_session=db_session,
-            )
+        extract_city(
+            city,
+            window_start=window_start,
+            window_end=window_end,
+            run_id=run_id,
+            api_key=api_key,
+            engine=engine,
         )
-        is not None
+        for city in cities
     ]
     print(f"Extracted {len(results)}/{len(cities)} cities.")
     return results
 
 
-__all__ = ["AirQualityRecord", "extract_city", "extract_cities"]
+__all__ = ["extract_city", "extract_cities"]

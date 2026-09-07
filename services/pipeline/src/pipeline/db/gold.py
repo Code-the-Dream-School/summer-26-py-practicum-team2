@@ -39,6 +39,8 @@ def _apply_measurements(target: GoldAirQuality, row: dict) -> None:
     target.aqi = int(row["aqi"])
     for name in POLLUTANTS:
         setattr(target, name, _pollutant(row, name))
+    if "source_raw_id" in row:
+        target.source_raw_id = row["source_raw_id"]
 
 
 def upsert_gold(rows: list[dict], engine: Engine | None = None) -> GoldUpsertResult:

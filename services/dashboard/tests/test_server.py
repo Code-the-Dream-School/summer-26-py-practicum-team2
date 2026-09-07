@@ -28,9 +28,9 @@ def _client():
         connection.execute(
             insert(server.cities),
             [
-                {"city_id": "US_RAL_01", "city_name": "Raleigh", "state": "NC", "country": "US", "is_active": True},
-                {"city_id": "GB_LON_01", "city_name": "London", "state": None, "country": "GB", "is_active": True},
-                {"city_id": "US_NYC_99", "city_name": "New York", "state": "NY", "country": "US", "is_active": False},
+                {"city_id": "US_RAL_01", "display_name": "Raleigh, NC, US", "is_active": True},
+                {"city_id": "GB_LON_01", "display_name": "London, GB", "is_active": True},
+                {"city_id": "US_NYC_99", "display_name": "New York, NY, US", "is_active": False},
             ],
         )
         connection.execute(
@@ -55,7 +55,7 @@ def test_cities_and_overview_only_include_active_cities_with_readings() -> None:
     assert cities.status_code == 200
     assert cities.json == [
         {"id": "GB_LON_01", "cityName": "London, GB"},
-        {"id": "US_RAL_01", "cityName": "Raleigh, NC"},
+        {"id": "US_RAL_01", "cityName": "Raleigh, NC, US"},
     ]
     assert overview.status_code == 200
     assert overview.json[1]["aqi"] == 4

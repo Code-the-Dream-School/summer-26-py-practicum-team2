@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: cityair
+      POSTGRES_PASSWORD: cityair
+      POSTGRES_DB: cityair
+    ports:
+      - "5432:5432"
+    volumes:
+      - cityair-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cityair -d cityair"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  dashboard-api:
+    build:
+      context: .
+      dockerfile: services/dashboard/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg://cityair:cityair@postgres:5432/cityair
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: services/dashboard/frontend
+    volumes:
+      - ./services/dashboard/frontend:/app
+      - frontend-node-modules:/app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - dashboard-api
+
+volumes:
+  cityair-data:
+  frontend-node-modules:

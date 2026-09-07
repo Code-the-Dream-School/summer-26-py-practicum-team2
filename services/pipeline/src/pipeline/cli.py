@@ -15,8 +15,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    results = run_pipeline_flow(history_hours=args.history_hours)
-    print(f"Extract stage complete: {len(results)} cities extracted.")
+    result = run_pipeline_flow(history_hours=args.history_hours)
+    print(f"Pipeline complete: {result.stored} gold rows stored ({result.inserted} inserted, {result.updated} updated).")
     return 0
 
 

@@ -20,9 +20,7 @@ metadata = MetaData()
 cities = Table(
     "cities", metadata,
     Column("city_id", String, primary_key=True),
-    Column("city_name", String, nullable=False),
-    Column("state", String),
-    Column("country", String, nullable=False),
+    Column("display_name", String, nullable=False),
     Column("is_active", Boolean, nullable=False),
 )
 gold_air_quality = Table(
@@ -47,8 +45,8 @@ def _as_utc(value: datetime) -> datetime:
     return value.astimezone(timezone.utc)
 
 
-def _city_label(city_name: str, state: str | None, country: str) -> str:
-    return f"{city_name}, {state or country}"
+def _city_label(display_name: str) -> str:
+    return display_name
 
 
 def _city_rows(engine: Engine):
@@ -65,12 +63,12 @@ def _city_rows(engine: Engine):
     )
     statement = (
         select(
-            cities.c.city_id, cities.c.city_name, cities.c.state, cities.c.country,
+            cities.c.city_id, cities.c.display_name,
             latest_reading.c.observed_at, latest_reading.c.aqi,
         )
         .join(latest_reading, latest_reading.c.city_id == cities.c.city_id)
         .where(cities.c.is_active.is_(True), latest_reading.c.reading_rank == 1)
-        .order_by(cities.c.city_name)
+        .order_by(cities.c.display_name)
     )
     with engine.connect() as connection:
         return connection.execute(statement).mappings().all()
@@ -101,7 +99,7 @@ def create_app(
     @app.get("/api/cities")
     def get_cities():
         return jsonify([
-            {"id": row["city_id"], "cityName": _city_label(row["city_name"], row["state"], row["country"])}
+            {"id": row["city_id"], "cityName": _city_label(row["display_name"])}
             for row in _city_rows(resolved_engine)
         ])
 
@@ -110,7 +108,7 @@ def create_app(
         return jsonify([
             {
                 "id": row["city_id"],
-                "cityName": _city_label(row["city_name"], row["state"], row["country"]),
+                "cityName": _city_label(row["display_name"]),
                 "aqi": row["aqi"],
                 "observedAt": _as_utc(row["observed_at"]).isoformat(),
             }
@@ -124,7 +122,7 @@ def create_app(
 
         end = _as_utc(current_time())
         start = end - timedelta(hours=24)
-        city_statement = select(cities.c.city_name, cities.c.state, cities.c.country).where(cities.c.city_id == city_id)
+        city_statement = select(cities.c.display_name).where(cities.c.city_id == city_id)
         trend_statement = (
             select(gold_air_quality.c.observed_at, gold_air_quality.c.aqi)
             .where(
@@ -140,7 +138,7 @@ def create_app(
 
         return jsonify({
             "id": city_id,
-            "cityName": _city_label(city["city_name"], city["state"], city["country"]),
+            "cityName": _city_label(city["display_name"]),
             "aqi": trend[-1]["aqi"] if trend else None,
             "trend": [
                 {"observedAt": _as_utc(row["observed_at"]).isoformat(), "aqi": row["aqi"]}
@@ -193,4 +191,6 @@ def create_app(
 
 
 if __name__ == "__main__":
-    create_app().run(port=8000, debug=True)
+    host = os.getenv("DASHBOARD_HOST", "127.0.0.1")
+    port = int(os.getenv("DASHBOARD_PORT", "8000"))
+    create_app().run(host=host, port=port, debug=True)

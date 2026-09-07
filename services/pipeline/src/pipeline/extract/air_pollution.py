@@ -40,8 +40,10 @@ class AirQualityRecord:
     pm10: float
     nh3: float
 
-# Fetchs hourly historical air quality for a coordinate over a UTC time range.
-def fetch_air_pollution_history(
+# Calls the history endpoint and returns the raw JSON payload and HTTP status,
+# undigested. This is what the raw_air_pollution_responses table stores; the transform
+# stage parses `list` out of it independently, later and from persisted storage.
+def fetch_air_pollution_history_raw(
     lat: float,
     lon: float,
     start: datetime,
@@ -50,7 +52,7 @@ def fetch_air_pollution_history(
     api_key: str | None = None,
     session: requests.Session | None = None,
     timeout_seconds: float = 10.0,
-) -> list[AirQualityRecord]:
+) -> tuple[dict, int]:
 
     if start > end:
         raise ValueError("start must be before end")
@@ -78,6 +80,31 @@ def fetch_air_pollution_history(
         payload = response.json()
     except ValueError as exc:
         raise AirPollutionError("OpenWeather air pollution response was not valid JSON") from exc
+
+    return payload, response.status_code
+
+
+# Fetchs hourly historical air quality for a coordinate over a UTC time range.
+def fetch_air_pollution_history(
+    lat: float,
+    lon: float,
+    start: datetime,
+    end: datetime,
+    *,
+    api_key: str | None = None,
+    session: requests.Session | None = None,
+    timeout_seconds: float = 10.0,
+) -> list[AirQualityRecord]:
+
+    payload, _status = fetch_air_pollution_history_raw(
+        lat=lat,
+        lon=lon,
+        start=start,
+        end=end,
+        api_key=api_key,
+        session=session,
+        timeout_seconds=timeout_seconds,
+    )
 
     try:
         entries = payload["list"]
