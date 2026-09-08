@@ -123,7 +123,7 @@ function App() {
         </div>
 
         <div className="border border-dashed border-gray-300 rounded-lg p-12 text-center text-sm text-gray-400">
-          Data above is served from the local Flask backend and PostgreSQL gold table.
+          Real-time air quality data from OpenWeather.
         </div>
       </main>
       <Footer />
