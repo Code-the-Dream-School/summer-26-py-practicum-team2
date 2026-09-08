@@ -8,9 +8,9 @@ This repo contains a Code the Dream-friendly batch ETL project that:
 4. Writes the gold dataset to PostgreSQL
 5. Serves a React dashboard backed by a Python API over PostgreSQL data
 
-The pipeline uses DB-first gold persistence by default, with PostgreSQL as the primary gold-data target
+The pipeline uses DB-first gold persistence by default, with PostgreSQL as the primary gold-data target.
 City configuration, geocoding cache, and raw extract persistence are in PostgreSQL as runtime state.
-The same PostgreSQL runtime path can target either local Docker/Postgres or managed Azure Database for PostgreSQL through environment configuration.
+Point `DATABASE_URL` at PostgreSQL 17 — a regular local install or a Docker container.
 
 ## Team repository setup (Sprint 0)
 
@@ -50,11 +50,27 @@ git remote -v
 
 ## How to run this
 
-There is no `docker-compose.yml` on `main`. Start Postgres with Docker, then migrate, seed, run the pipeline, and open the dashboard. Fuller detail: [`docs/setup/local_storage_workflow.md`](docs/setup/local_storage_workflow.md).
+You need PostgreSQL 17, then migrate, seed, run the pipeline, and open the dashboard. There is no `docker-compose.yml` on `main`. Fuller detail: [`docs/setup/local_storage_workflow.md`](docs/setup/local_storage_workflow.md).
 
 ### 1. Postgres
 
-Docker Desktop must be running. From any terminal:
+Use either a regular local PostgreSQL 17 install or Docker. Only one process should listen on port `5432`.
+
+**Option A — local PostgreSQL 17**
+
+Create a database and user that match `.env.example`, or change `DATABASE_URL` to match an existing local server:
+
+```shell
+# example if `psql` is on your PATH
+psql -U postgres -c "CREATE USER cityair WITH PASSWORD 'cityair';"
+psql -U postgres -c "CREATE DATABASE cityair OWNER cityair;"
+```
+
+Skip this if you already have a local `cityair` database. Confirm Postgres is running, then continue at step 2.
+
+**Option B — Docker**
+
+Docker Desktop (or another Docker engine) must be running. From any terminal:
 
 ```shell
 docker run --name cityair-postgres \
@@ -71,7 +87,7 @@ If that container already exists:
 docker start cityair-postgres
 ```
 
-`localhost:5432` is the published Docker port, not a separate Windows Postgres service. Confirm with `docker ps`. Do not start a second container on the same port.
+If you use Docker, `localhost:5432` is the published container port. Confirm with `docker ps`. Do not start a second container, and do not also run a local Postgres service on the same port.
 
 ### 2. Python env and `.env`
 
@@ -84,7 +100,7 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Keep `.env` at the repo root. Set `DATABASE_URL` (the example matches the container above) and `OPENWEATHER_API_KEY`.
+Keep `.env` at the repo root. Set `DATABASE_URL` to the Postgres you started in step 1 (the example matches the `cityair` user/database above) and set `OPENWEATHER_API_KEY`.
 
 ### 3. Schema and cities
 
