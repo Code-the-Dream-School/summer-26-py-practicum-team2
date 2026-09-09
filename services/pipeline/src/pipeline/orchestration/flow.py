@@ -23,11 +23,13 @@ def extract_task(
     cities: list[dict[str, str]],
     history_hours: int,
     pipeline_run_id: int,
+    engine=None,
 ) -> list[dict]:
     return extract_cities(
         cities,
         history_hours=history_hours,
         pipeline_run_id=pipeline_run_id,
+        engine=engine,
     )
 
 
@@ -59,7 +61,7 @@ def run_pipeline_flow(
 
     try:
         cities = load_cities_task()
-        results = extract_task(cities, history_hours, pipeline_run_id)
+        results = extract_task(cities, history_hours, pipeline_run_id, engine=engine)
         log.info("Extract stage complete: %d/%d cities", len(results), len(cities))
 
         gold_row_count = transform_and_load_task(pipeline_run_id, engine=engine)
