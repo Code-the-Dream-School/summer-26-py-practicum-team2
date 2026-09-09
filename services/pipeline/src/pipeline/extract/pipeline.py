@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
+from pipeline.db.session import get_engine
 from pipeline.db.raw_responses import RawResponseRecord, save_raw_response
 from pipeline.extract.air_pollution import (AirQualityRecord, fetch_air_pollution_history_result,)
 from pipeline.extract.geocoding import GeocodingNotFoundError, geocode_city
@@ -73,8 +74,38 @@ def extract_cities(
     api_key: str | None = None,
     db_session: Session | None = None,
     pipeline_run_id: int | None = None,
+    engine=None,
 ) -> list[dict]:
 
+    # Open a session for the geocoding cache when the caller did not supply one,
+    # so results are read from / written to `geocoding_cache` during real runs.
+    if db_session is not None:
+        return _extract_cities(
+            cities,
+            history_hours=history_hours,
+            api_key=api_key,
+            db_session=db_session,
+            pipeline_run_id=pipeline_run_id,
+        )
+
+    with Session(engine or get_engine()) as session:
+        return _extract_cities(
+            cities,
+            history_hours=history_hours,
+            api_key=api_key,
+            db_session=session,
+            pipeline_run_id=pipeline_run_id,
+        )
+
+
+def _extract_cities(
+    cities: list[dict[str, str]],
+    *,
+    history_hours: int,
+    api_key: str | None,
+    db_session: Session | None,
+    pipeline_run_id: int | None,
+) -> list[dict]:
     results = [
         result
         for city in cities
